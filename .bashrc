@@ -24,6 +24,25 @@ if [ -d ~/.bashrc.d ]; then
 fi
 unset rc
 
-if [ -t 1 ] && [ -z "$DISTROBOX_ENTERD" ]; then
-    distrobox enter arch-dev
+# Enter Arch when login
+if command -v distrobox > /dev/null 2>&1; then
+    if [ -t 1 ] && [ -z "$DISTROBOX_ENTERD" ]; then
+        distrobox enter arch-dev
+    fi
+fi
+
+# Pacman
+if command -v pacman > /dev/null 2>&1; then
+    function pacin() {
+        sudo pacman -S "$@"
+	if [ $? -eq 0 ]; then
+            echo "Updating pkglist.txt..."
+	    pacman -Qqe > ~/dotfiles/pkglist.txt
+
+	    echo "-----------------------------"
+	    cd ~/dotfiles
+	    git status
+	    cd - > /dev/null
+	fi
+    }
 fi
