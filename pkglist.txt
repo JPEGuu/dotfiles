@@ -30,4 +30,5 @@ vulkan-radeon
 wget
 words
 xorg-xauth
+zellij
 zip
