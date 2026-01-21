@@ -13,6 +13,7 @@ man-db
 man-pages
 mesa
 mtr
+npm
 nss-mdns
 openssh
 pigz
