@@ -124,6 +124,15 @@ if command -v sheldon > /dev/null 2>&1; then
     eval "$(sheldon source)"
 fi
 
+# --- Auto-start Zellij ---
+if command -v zellij > /dev/null 2>&1; then
+    # Only auto-start if in SSH, interactive, and not already in Zellij
+    if [[ -n "$SSH_CONNECTION" ]] && [[ -z "$ZELLIJ" ]]; then
+        # Attach to 'default' session or create it
+        zellij attach -c default
+    fi
+fi
+
 # Load extra configs
 if [ -d ~/.zshrc.d ]; then
     for rc in ~/.zshrc.d/*; do
