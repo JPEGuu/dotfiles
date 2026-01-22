@@ -24,6 +24,11 @@ setopt SHARE_HISTORY
 setopt HIST_IGNORE_DUPS
 setopt HIST_IGNORE_SPACE
 
+# --- Sheldon (Plugin Manager) ---
+if command -v sheldon > /dev/null 2>&1; then
+    eval "$(sheldon source)"
+fi
+
 # Completion
 autoload -Uz compinit && compinit
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}' # Case insensitive

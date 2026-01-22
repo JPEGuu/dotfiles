@@ -32,7 +32,7 @@ alias diff='diff --color=auto'
 
 # Enter Arch when login (Fallback for Bash users)
 if command -v distrobox > /dev/null 2>&1; then
-    if [ -t 1 ] && [ -z "$DISTROBOX_ENTERD" ]; then
+    if [ -t 1 ] && [ -z "$DISTROBOX_ENTERED" ]; then
         distrobox enter arch-dev
     fi
 fi

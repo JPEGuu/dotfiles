@@ -36,5 +36,6 @@ setup_symlink "$DOTFILES_DIR/.zshrc" "$HOME/.zshrc"
 setup_symlink "$DOTFILES_DIR/.config/zellij" "$HOME/.config/zellij"
 setup_symlink "$DOTFILES_DIR/.config/nvim" "$HOME/.config/nvim"
 setup_symlink "$DOTFILES_DIR/.config/yazi" "$HOME/.config/yazi"
+setup_symlink "$DOTFILES_DIR/.config/sheldon" "$HOME/.config/sheldon"
 
 echo "✅ Installation complete! Please restart your shell."
