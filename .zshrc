@@ -7,6 +7,7 @@ if [ -f /etc/zshrc ]; then
 fi
 
 # --- Environment Variables ---
+export LANG=ja_JP.UTF-8
 for dir in "$HOME/.local/bin" "$HOME/bin"; do
     if [ -d "$dir" ] && [[ ":$PATH:" != *":$dir:"* ]]; then
         PATH="$dir:$PATH"
