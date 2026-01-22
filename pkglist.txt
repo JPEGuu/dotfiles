@@ -8,6 +8,7 @@ fzf
 git
 github-cli
 glibc-locales
+go
 inetutils
 less
 lsof
