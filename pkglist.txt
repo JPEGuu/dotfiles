@@ -3,6 +3,7 @@ bash-completion
 bc
 diffutils
 fastfetch
+fzf
 git
 github-cli
 glibc-locales
@@ -13,6 +14,7 @@ man-db
 man-pages
 mesa
 mtr
+neovim
 npm
 nss-mdns
 openssh
@@ -31,5 +33,7 @@ vulkan-radeon
 wget
 words
 xorg-xauth
+yazi
 zellij
 zip
+zsh
