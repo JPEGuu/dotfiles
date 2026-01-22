@@ -6,15 +6,28 @@ if [ -f /etc/bashrc ]; then
 fi
 
 # User specific environment
-if ! [[ "$PATH" =~ "$HOME/.local/bin:$HOME/bin:" ]]; then
-    PATH="$HOME/.local/bin:$HOME/bin:$PATH"
-fi
+for dir in "$HOME/.local/bin" "$HOME/bin"; do
+    if [ -d "$dir" ] && [[ ":$PATH:" != *":$dir:"* ]]; then
+        PATH="$dir:$PATH"
+    fi
+done
 export PATH
 
 # Uncomment the following line if you don't like systemctl's auto-paging feature:
 # export SYSTEMD_PAGER=
 
 # User specific aliases and functions
+alias dotpush='(cd ~/dotfiles && git push)'
+alias ls='ls --color=auto'
+alias grep='grep --color=auto'
+alias diff='diff --color=auto'
+
+# Better history management
+export HISTCONTROL=ignoreboth
+export HISTSIZE=10000
+export HISTFILESIZE=20000
+shopt -s histappend # Append to history instead of overwriting
+
 if [ -d ~/.bashrc.d ]; then
     for rc in ~/.bashrc.d/*; do
         if [ -f "$rc" ]; then
@@ -33,16 +46,32 @@ fi
 
 # Pacman
 if command -v pacman > /dev/null 2>&1; then
-    function pacin() {
-        sudo pacman -S "$@"
-	if [ $? -eq 0 ]; then
-            echo "Updating pkglist.txt..."
-	    pacman -Qqe > ~/dotfiles/pkglist.txt
+    _sync_pkglist() {
+        local message="$1"
+        local dotfiles_dir="$HOME/dotfiles"
+        
+        echo "📄 Updating pkglist.txt..."
+        pacman -Qqe > "$dotfiles_dir/pkglist.txt"
+        
+        (
+            cd "$dotfiles_dir" || exit
+            if [[ -n $(git status --porcelain pkglist.txt) ]]; then
+                echo "📦 Changes detected. Committing locally..."
+                git add pkglist.txt
+                git commit -m "$message"
+                echo "✅ Changes committed to $dotfiles_dir"
+            else
+                echo "ℹ️  No changes in package list."
+            fi
+        )
+    }
 
-	    echo "-----------------------------"
-	    cd ~/dotfiles
-	    git status
-	    cd - > /dev/null
-	fi
+    function pacin() {
+        sudo pacman -S "$@" && _sync_pkglist "Install: $*"
+    }
+
+    function pacrm() {
+        # -Rns : 設定ファイル(n)と、不要になった依存パッケージ(s)もまとめて消す
+        sudo pacman -Rns "$@" && _sync_pkglist "Remove: $*"
     }
 fi
