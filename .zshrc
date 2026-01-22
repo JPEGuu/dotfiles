@@ -46,18 +46,31 @@ alias la='ls -A'
 alias l='ls -CF'
 
 # --- Gemini Wrapper ---
-# Interactive session resume with fzf if run without arguments
+# Interactive session resume with fzf. Supports 'gemini new' shortcut.
 gemini() {
+    # Shortcut: 'gemini new' starts a new session immediately
+    if [ "$1" = "new" ]; then
+        shift
+        command gemini "$@"
+        return
+    fi
+
     if [ $# -eq 0 ]; then
-        # List sessions, extract ID with sed, and select with fzf
-        local session_idx=$(command gemini --list-sessions | grep -E '^[[:space:]]+[0-9]+\.' | fzf --height 40% --reverse --header "Select a session to resume (ESC to start new)" | sed -E 's/^[[:space:]]+([0-9]+)\..*/\1/')
+        local new_label="🆕 Start New Session"
+        # Get session list, strip headers
+        local sessions=$(command gemini --list-sessions | grep -E '^[[:space:]]+[0-9]+\.')
         
-        if [ -n "$session_idx" ]; then
-            echo "🔄 Resuming session #$session_idx..."
-            command gemini --resume "$session_idx"
-        else
+        # Prepend "New Session" option and show in fzf
+        local selected=$(echo -e "$new_label\n$sessions" | fzf --height 40% --reverse --header "Select session or action")
+
+        if [[ "$selected" == "$new_label" ]]; then
             echo "✨ Starting new session..."
             command gemini
+        elif [[ -n "$selected" ]]; then
+            # Extract ID and resume
+            local id=$(echo "$selected" | sed -E 's/^[[:space:]]+([0-9]+)\..*/\1/')
+            echo "🔄 Resuming session #$id..."
+            command gemini --resume "$id"
         fi
     else
         command gemini "$@"
