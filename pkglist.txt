@@ -26,6 +26,7 @@ tcpdump
 time
 traceroute
 tree
+tree-sitter-cli
 unzip
 vim
 vte-common
