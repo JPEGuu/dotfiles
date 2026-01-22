@@ -1,6 +1,7 @@
 base
 bash-completion
 bc
+composer
 deno
 diffutils
 fastfetch
@@ -20,8 +21,10 @@ neovim
 npm
 nss-mdns
 openssh
+php
 pigz
 rsync
+rustup
 sudo
 tcpdump
 time
