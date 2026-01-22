@@ -25,6 +25,7 @@ php
 pigz
 rsync
 rustup
+sheldon
 sudo
 tcpdump
 time
