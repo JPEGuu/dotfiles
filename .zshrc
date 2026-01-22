@@ -45,12 +45,31 @@ alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
 
+# --- Gemini Wrapper ---
+# Interactive session resume with fzf if run without arguments
+gemini() {
+    if [ $# -eq 0 ]; then
+        # List sessions, extract ID with sed, and select with fzf
+        local session_idx=$(command gemini --list-sessions | grep -E '^[[:space:]]+[0-9]+\.' | fzf --height 40% --reverse --header "Select a session to resume (ESC to start new)" | sed -E 's/^[[:space:]]+([0-9]+)\..*/\1/')
+        
+        if [ -n "$session_idx" ]; then
+            echo "🔄 Resuming session #$session_idx..."
+            command gemini --resume "$session_idx"
+        else
+            echo "✨ Starting new session..."
+            command gemini
+        fi
+    else
+        command gemini "$@"
+    fi
+}
+
 # --- Distrobox Auto-Enter (Host Side) ---
 # Enter Arch when login if strictly interactive and not already inside
 if command -v distrobox > /dev/null 2>&1; then
-    if [ -t 1 ] && [ -z "$DISTROBOX_ENTERD" ]; then
+    if [ -t 1 ] && [ -z "$DISTROBOX_ENTERED" ]; then
         # Check if we are already in the target container to avoid loops logic if env var fails
-        # But DISTROBOX_ENTERD is standard.
+        # But DISTROBOX_ENTERED is standard.
         distrobox enter arch-dev
     fi
 fi
