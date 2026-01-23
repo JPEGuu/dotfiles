@@ -1,10 +1,12 @@
 # .bashrc
 
 # --- AlmaLinux / RHEL / Global Settings ---
-# Source global definitions
 if [ -f /etc/bashrc ]; then
     . /etc/bashrc
 fi
+
+# --- Variables ---
+export DOTFILES="$HOME/dotfiles"
 
 # --- Zsh Auto-Start ---
 # If Zsh is available, launch it immediately.
@@ -24,15 +26,20 @@ for dir in "$HOME/.local/bin" "$HOME/bin"; do
 done
 export PATH
 
-# User specific aliases
-alias dotpush='(cd ~/dotfiles && git push)'
-alias ls='ls --color=auto'
-alias grep='grep --color=auto'
-alias diff='diff --color=auto'
+# --- Modular Configs ---
+# Aliases
+if [ -f "$HOME/.config/shell/aliases.sh" ]; then
+    source "$HOME/.config/shell/aliases.sh"
+fi
 
 # Enter Arch when login (Fallback for Bash users)
 if command -v distrobox > /dev/null 2>&1; then
     if [ -t 1 ] && [ -z "$DISTROBOX_ENTERED" ]; then
         distrobox enter arch-dev
     fi
+fi
+
+# --- Zoxide ---
+if command -v zoxide > /dev/null 2>&1; then
+    eval "$(zoxide init bash)"
 fi

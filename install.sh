@@ -20,6 +20,12 @@ setup_symlink() {
         mkdir -p "$BACKUP_DIR"
         mv "$target_file" "$BACKUP_DIR/"
     elif [ -L "$target_file" ]; then
+        # Check if it already points to the correct place
+        local current_target=$(readlink -f "$target_file")
+        if [ "$current_target" == "$source_file" ]; then
+            echo "✅ $target_file is already correctly linked."
+            return
+        fi
         echo "🔗 Removing existing symlink $target_file"
         rm "$target_file"
     fi
@@ -28,14 +34,18 @@ setup_symlink() {
     ln -s "$source_file" "$target_file"
 }
 
+echo "🛠️  Starting Dotfiles Installation..."
+
 # Link shell configs
 setup_symlink "$DOTFILES_DIR/.bashrc" "$HOME/.bashrc"
 setup_symlink "$DOTFILES_DIR/.zshrc" "$HOME/.zshrc"
 
-# Link tool configs
-setup_symlink "$DOTFILES_DIR/.config/zellij" "$HOME/.config/zellij"
-setup_symlink "$DOTFILES_DIR/.config/nvim" "$HOME/.config/nvim"
-setup_symlink "$DOTFILES_DIR/.config/yazi" "$HOME/.config/yazi"
-setup_symlink "$DOTFILES_DIR/.config/sheldon" "$HOME/.config/sheldon"
+# Link all configs in .config
+if [ -d "$DOTFILES_DIR/.config" ]; then
+    for config in "$DOTFILES_DIR/.config"/*; do
+        name=$(basename "$config")
+        setup_symlink "$config" "$HOME/.config/$name"
+    done
+fi
 
 echo "✅ Installation complete! Please restart your shell."
