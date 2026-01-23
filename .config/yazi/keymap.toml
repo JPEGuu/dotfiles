@@ -1,4 +1,5 @@
-[[manager.prepend_keymap]]
+[[mgr.prepend_keymap]]
 on   = [ "E" ]
 run  = 'shell "nvim \"$@\"" --block'
 desc = "Open in nvim"
+
