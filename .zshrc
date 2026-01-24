@@ -12,6 +12,7 @@ export DOTFILES="$HOME/dotfiles"
 export XDG_CONFIG_HOME="$HOME/.config"
 export EDITOR=nvim
 export VISUAL=nvim
+export GEMINI_API_KEY="AIza..." # Replace with your actual Gemini API Key from Google AI Studio
 
 # --- NVM (Node Version Manager) ---
 export NVM_DIR="$HOME/.config/nvm"
