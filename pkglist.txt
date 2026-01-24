@@ -2,6 +2,7 @@
 base
 bash-completion
 bc
+bottom
 chafa
 composer
 deno
@@ -23,7 +24,6 @@ man-pages
 mesa
 mtr
 neovim
-npm
 nss-mdns
 openssh
 php
@@ -50,4 +50,5 @@ xorg-xauth
 yazi
 zellij
 zip
+zoxide
 zsh
