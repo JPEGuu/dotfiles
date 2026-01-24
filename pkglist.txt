@@ -1,5 +1,6 @@
 7zip
 base
+base-devel
 bash-completion
 bc
 bottom
