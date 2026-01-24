@@ -249,6 +249,40 @@ later(function()
   end)
 end)
 
+-- Avante (AI Assistant)
+later(function()
+  -- Dependencies
+  add({ source = 'stevearc/dressing.nvim' })
+  add({ source = 'nvim-lua/plenary.nvim' })
+  add({ source = 'MunifTanjim/nui.nvim' })
+  add({ source = 'MeanderingProgrammer/render-markdown.nvim' })
+
+  -- Avante
+  add({
+    source = 'yetone/avante.nvim',
+    hooks = {
+      post_checkout = function() vim.fn.system('make BUILD_FROM_SOURCE=true') end,
+      post_install = function() vim.fn.system('make BUILD_FROM_SOURCE=true') end,
+    }
+  })
+
+  safecall("avante", function(avante)
+    -- Setup render-markdown for Avante buffers
+    require('render-markdown').setup({ file_types = { "markdown", "Avante" } })
+
+    avante.setup({
+      provider = "gemini",
+      gemini = {
+        model = "gemini-1.5-flash-latest",
+        max_tokens = 4096,
+      },
+      behaviour = {
+        auto_suggestions = false, 
+      },
+    })
+  end)
+end)
+
 -- Skkeleton (Japanese Input)
 later(function()
   add({ source = 'vim-denops/denops.vim' })
