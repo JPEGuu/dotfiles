@@ -144,6 +144,12 @@ later(function()
   map("n", "<Leader>ff", ":Pick files<CR>", { desc = "Find Files" })
   map("n", "<Leader>fg", ":Pick grep_live<CR>", { desc = "Grep Live" })
   map("n", "<Leader>fb", ":Pick buffers<CR>", { desc = "Find Buffers" })
+
+  -- Tab management
+  map("n", "[t", ":tabprevious<CR>", { desc = "Previous Tab" })
+  map("n", "]t", ":tabnext<CR>", { desc = "Next Tab" })
+  map("n", "<Leader>tn", ":tabnew<CR>", { desc = "New Tab" })
+  map("n", "<Leader>tc", ":tabclose<CR>", { desc = "Close Tab" })
 end)
 
 -- =============================================================================
