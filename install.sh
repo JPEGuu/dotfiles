@@ -48,4 +48,10 @@ if [ -d "$DOTFILES_DIR/.config" ]; then
     done
 fi
 
+# Install packages from pkglist.txt
+if command -v pacman >/dev/null 2>&1 && [ -f "$DOTFILES_DIR/pkglist.txt" ]; then
+    echo "📦 Installing packages from pkglist.txt..."
+    sudo pacman -S --needed --noconfirm - < "$DOTFILES_DIR/pkglist.txt"
+fi
+
 echo "✅ Installation complete! Please restart your shell."
