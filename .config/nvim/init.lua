@@ -287,6 +287,24 @@ later(function()
   end)
 end)
 
+-- Neogit & Diffview (Git Interface)
+later(function()
+  add({ source = 'sindrets/diffview.nvim' })
+  add({ source = 'NeogitOrg/neogit' })
+
+  safecall("neogit", function(neogit)
+    neogit.setup({
+      disable_commit_confirmation = true,
+      integrations = {
+        diffview = true,
+      },
+    })
+    
+    -- Keymaps
+    vim.keymap.set("n", "<Leader>gg", neogit.open, { desc = "Neogit Status" })
+  end)
+end)
+
 -- Skkeleton (Japanese Input)
 later(function()
   add({ source = 'vim-denops/denops.vim' })
