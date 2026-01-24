@@ -292,16 +292,19 @@ later(function()
   add({ source = 'vim-denops/denops.vim' })
   add({ source = 'vim-skk/skkeleton' })
 
-  -- Config (Use pcall directly or just define if available)
-  if pcall(require, "skkeleton") then
+  -- Keymaps (Set unconditionally)
+  vim.keymap.set("i", "<C-j>", "<Plug>(skkeleton-toggle)")
+  vim.keymap.set("c", "<C-j>", "<Plug>(skkeleton-toggle)")
+
+  -- Configuration (Apply on initialization)
+  vim.api.nvim_create_autocmd("User", {
+    pattern = "skkeleton-initialize-pre",
+    callback = function()
       vim.fn["skkeleton#config"]({
         globalDictionaries = { "~/.skk/SKK-JISYO.L" },
         eggLikeNewline = true,
         registerConvertResult = true,
       })
-      
-      -- Keymaps
-      vim.keymap.set("i", "<C-j>", "<Plug>(skkeleton-toggle)")
-      vim.keymap.set("c", "<C-j>", "<Plug>(skkeleton-toggle)")
-  end
+    end,
+  })
 end)
