@@ -15,18 +15,8 @@ export VISUAL=nvim
 
 # --- NVM (Node Version Manager) ---
 export NVM_DIR="$HOME/.config/nvm"
-# Lazy load nvm to speed up shell startup
-if [ -s "$NVM_DIR/nvm.sh" ]; then
-  nvm() {
-    unset -f nvm node npm npx
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-    nvm "$@"
-  }
-  node() { nvm >/dev/null; node "$@" }
-  npm() { nvm >/dev/null; npm "$@" }
-  npx() { nvm >/dev/null; npx "$@" }
-fi
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 # Prepend user bin directories to PATH if they exist
 for dir in "$HOME/.local/bin" "$HOME/bin"; do
