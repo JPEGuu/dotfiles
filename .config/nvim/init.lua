@@ -272,9 +272,13 @@ later(function()
 
     avante.setup({
       provider = "gemini",
-      gemini = {
-        model = "gemini-1.5-flash-latest",
-        max_tokens = 4096,
+      providers = {
+        gemini = {
+          model = "gemini-1.5-flash-latest",
+          extra_request_body = {
+            max_tokens = 4096,
+          },
+        },
       },
       behaviour = {
         auto_suggestions = false, 
