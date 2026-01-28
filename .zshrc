@@ -87,7 +87,7 @@ fi
 if command -v zellij > /dev/null 2>&1; then
     # Only auto-start if in SSH, interactive, and not already in Zellij
     if [[ -n "$SSH_CONNECTION" ]] && [[ -z "$ZELLIJ" ]]; then
-        zellij attach -c default
+        zellij
     fi
 fi
 
