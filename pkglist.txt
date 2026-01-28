@@ -53,3 +53,4 @@ zellij
 zip
 zoxide
 zsh
+starship

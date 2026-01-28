@@ -48,12 +48,17 @@ autoload -Uz compinit && compinit
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}' # Case insensitive
 zstyle ':completion:*' menu select
 
-# Prompt (Simple & Clean)
-autoload -Uz vcs_info
-precmd() { vcs_info }
-zstyle ':vcs_info:git:*' formats '(%b)'
-setopt PROMPT_SUBST
-PROMPT='%F{cyan}%n%f@%F{green}%m%f:%F{blue}%~%f ${vcs_info_msg_0_} %# '
+# Prompt (Starship)
+if command -v starship > /dev/null 2>&1; then
+    eval "$(starship init zsh)"
+else
+    # Fallback Prompt (Simple & Clean)
+    autoload -Uz vcs_info
+    precmd() { vcs_info }
+    zstyle ':vcs_info:git:*' formats '(%b)'
+    setopt PROMPT_SUBST
+    PROMPT='%F{cyan}%n%f@%F{green}%m%f:%F{blue}%~%f ${vcs_info_msg_0_} %# '
+fi
 
 # --- Modular Configs ---
 # Aliases
