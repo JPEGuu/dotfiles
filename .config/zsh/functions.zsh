@@ -12,7 +12,7 @@ gemini() {
         local new_label="🆕 Start New Session"
         # Get session list, strip headers
         local sessions=$(command gemini --list-sessions | grep -E '^[[:space:]]+[0-9]+\.')
-        
+
         # Prepend "New Session" option and show in fzf
         local selected=$(echo -e "$new_label\n$sessions" | fzf --height 40% --reverse --header "Select session or action")
 
@@ -35,10 +35,10 @@ if command -v pacman > /dev/null 2>&1; then
     _sync_pkglist() {
         local message="$1"
         local dotfiles_dir="${DOTFILES:-$HOME/dotfiles}"
-        
+
         echo "📄 Updating pkglist.txt..."
         pacman -Qqe > "$dotfiles_dir/pkglist.txt"
-        
+
         (
             cd "$dotfiles_dir" || exit
             if [[ -n $(git status --porcelain pkglist.txt) ]]; then
@@ -52,11 +52,11 @@ if command -v pacman > /dev/null 2>&1; then
         )
     }
 
-    function pacin() {
-        sudo pacman -S "$@" && _sync_pkglist "Install: $*"
-    }
+function pacin() {
+    sudo pacman -S "$@" && _sync_pkglist "Install: $*"
+}
 
-    function pacrm() {
-        sudo pacman -Rns "$@" && _sync_pkglist "Remove: $*"
-    }
+function pacrm() {
+    sudo pacman -Rns "$@" && _sync_pkglist "Remove: $*"
+}
 fi
