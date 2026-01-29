@@ -16,6 +16,7 @@ git
 github-cli
 glibc-locales
 go
+imagemagick
 inetutils
 jq
 less
