@@ -73,6 +73,17 @@ now(function()
     vim.opt.tabstop    = 4
     vim.opt.shiftwidth = 4
     vim.opt.expandtab  = true
+
+    -- Changelog / Memo Configuration (Ref: https://homaju.hatenablog.com/entry/2022/06/16/080957)
+    -- Automatically set user name from git config
+    local git_user = vim.fn.system('git config --global user.name'):gsub('%s+$', '')
+    if git_user == "" then git_user = os.getenv("USER") or "Unknown" end
+
+    vim.g.changelog_username = git_user
+    vim.g.changelog_dateformat = "%Y-%m-%d"
+
+    -- Keymap to open global changelog
+    vim.keymap.set('n', '<Leader>mm', ':edit ~/Changelog<CR>', { desc = 'Open Global Changelog' })
 end)
 
 -- =============================================================================
@@ -192,6 +203,7 @@ later(function()
             { mode = 'n', keys = '<Leader>g', desc = '+Git' },
             { mode = 'n', keys = '<Leader>n', desc = '+Notify' },
             { mode = 'n', keys = '<Leader>b', desc = '+Buffer' },
+            { mode = 'n', keys = '<Leader>c', desc = '+Config' },
             { mode = 'n', keys = '<Leader>e', desc = 'File Explorer' },
         },
 
@@ -209,6 +221,7 @@ later(function()
     -- Keymaps
     local map = vim.keymap.set
     map("n", "<Leader>e", ":lua MiniFiles.open()<CR>", { desc = "File Explorer" })
+    map("n", "<Leader>cn", function() MiniFiles.open(vim.fn.stdpath('config')) end, { desc = "Config Neovim" })
     map("n", "<Leader>ff", ":Pick files<CR>", { desc = "Find Files" })
     map("n", "<Leader>fg", ":Pick git_files<CR>", { desc = "Find Git Files" })
     map("n", "<Leader>fl", ":Pick grep_live<CR>", { desc = "Grep Live" })
@@ -373,12 +386,12 @@ later(function()
                 registerConvertResult = true,
             })
 
-            -- Define Highlight Groups for Modes (Catppuccin Mocha approximations)
-            vim.api.nvim_set_hl(0, 'SkkeletonHira', { bg = '#2d4035' })    -- Green-ish
-            vim.api.nvim_set_hl(0, 'SkkeletonKata', { bg = '#40352d' })    -- Yellow-ish
-            vim.api.nvim_set_hl(0, 'SkkeletonHankata', { bg = '#402d40' }) -- Purple-ish
-            vim.api.nvim_set_hl(0, 'SkkeletonZenkaku', { bg = '#2d3540' }) -- Cyan-ish
-            vim.api.nvim_set_hl(0, 'SkkeletonAbbrev', { bg = '#402d2d' })  -- Red-ish
+            -- Define Highlight Groups for Modes (Darker for better contrast)
+            vim.api.nvim_set_hl(0, 'SkkeletonHira',    { bg = '#1a2b20' }) -- Darker Green
+            vim.api.nvim_set_hl(0, 'SkkeletonKata',    { bg = '#2b201a' }) -- Darker Brown
+            vim.api.nvim_set_hl(0, 'SkkeletonHankata', { bg = '#2b1a2b' }) -- Darker Purple
+            vim.api.nvim_set_hl(0, 'SkkeletonZenkaku', { bg = '#1a202b' }) -- Darker Cyan
+            vim.api.nvim_set_hl(0, 'SkkeletonAbbrev',  { bg = '#2b1a1a' }) -- Darker Red
         end,
     })
 
