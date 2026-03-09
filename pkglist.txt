@@ -5,6 +5,7 @@ bash-completion
 bc
 bottom
 chafa
+clojure
 composer
 deno
 diffutils
@@ -18,6 +19,7 @@ glibc-locales
 go
 imagemagick
 inetutils
+jdk-openjdk
 jq
 less
 lsof
@@ -33,6 +35,7 @@ pigz
 poppler
 resvg
 ripgrep
+rlwrap
 rsync
 rustup
 sheldon
