@@ -74,6 +74,10 @@ now(function()
     vim.opt.shiftwidth = 4
     vim.opt.expandtab  = true
 
+    -- Conjure Configuration (Set before plugin loads)
+    vim.g["conjure#mapping#prefix"] = ","
+    vim.g["conjure#log#hud#enabled"] = true
+
     -- Changelog / Memo Configuration (Ref: https://homaju.hatenablog.com/entry/2022/06/16/080957)
     -- Automatically set user name from git config
     local git_user = vim.fn.system('git config --global user.name'):gsub('%s+$', '')
@@ -187,6 +191,9 @@ later(function()
             -- z key
             { mode = 'n', keys = 'z' },
             { mode = 'x', keys = 'z' },
+
+            -- Conjure (Clojure REPL)
+            { mode = 'n', keys = ',' },
         },
 
         clues = {
@@ -205,6 +212,15 @@ later(function()
             { mode = 'n', keys = '<Leader>b', desc = '+Buffer' },
             { mode = 'n', keys = '<Leader>c', desc = '+Config' },
             { mode = 'n', keys = '<Leader>e', desc = 'File Explorer' },
+
+            -- Conjure groups
+            { mode = 'n', keys = ',e', desc = '+Evaluate' },
+            { mode = 'n', keys = ',l', desc = '+Log' },
+            { mode = 'n', keys = ',t', desc = '+Test' },
+            { mode = 'n', keys = ',v', desc = '+View' },
+            { mode = 'n', keys = ',c', desc = '+Connect' },
+            { mode = 'n', keys = ',g', desc = '+Get' },
+            { mode = 'n', keys = ',s', desc = '+Session' },
         },
 
         window = {
@@ -275,6 +291,11 @@ later(function()
             highlight = { enable = true },
         })
     end)
+end)
+
+-- Conjure (Clojure REPL Integration)
+later(function()
+    add({ source = 'Olical/conjure' })
 end)
 
 -- LSP (Mason + LspConfig)
