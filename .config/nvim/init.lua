@@ -118,7 +118,18 @@ later(function()
     require("mini.align").setup()
     require("mini.extra").setup()
     require("mini.indentscope").setup()
-    require("mini.files").setup()
+    require("mini.files").setup({
+        content = {
+            prefix = function(entry)
+                local icon, hl = MiniIcons.get(entry.fs_type, entry.name)
+                local stat = vim.loop.fs_lstat(entry.path)
+                if stat and stat.type == 'link' then
+                    icon, hl = '', 'MiniIconsCyan'
+                end
+                return icon, hl
+            end,
+        },
+    })
     require("mini.notify").setup()
     require("mini.hipatterns").setup({
         highlighters = {
@@ -396,6 +407,57 @@ later(function()
     -- Keymaps (Set unconditionally)
     vim.keymap.set("i", "<C-j>", "<Plug>(skkeleton-toggle)")
     vim.keymap.set("c", "<C-j>", "<Plug>(skkeleton-toggle)")
+
+    -- Floating window input for Terminal mode
+    local function skk_term_input()
+        local term_job_id = vim.b.terminal_job_id
+        local term_win = vim.api.nvim_get_current_win()
+        if not term_job_id then
+            vim.notify("No terminal job found in this buffer.", vim.log.levels.WARN)
+            return
+        end
+
+        local buf = vim.api.nvim_create_buf(false, true)
+        local win = vim.api.nvim_open_win(buf, true, {
+            relative = 'cursor', row = 1, col = 0,
+            width = 60, height = 1,
+            style = 'minimal', border = 'rounded',
+            title = ' SKK Input ', title_pos = 'center',
+        })
+
+        -- Submit when leaving insert mode (Normal mode entered via <Esc> or <C-[>)
+        vim.api.nvim_create_autocmd('InsertLeave', {
+            buffer = buf,
+            once = true,
+            callback = function()
+                local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+                local text = table.concat(lines, "")
+                
+                vim.schedule(function()
+                    if vim.api.nvim_win_is_valid(win) then
+                        vim.api.nvim_win_close(win, true)
+                    end
+                    vim.cmd('call skkeleton#handle("disable", {})')
+                    
+                    vim.api.nvim_set_current_win(term_win)
+                    if text ~= "" then
+                        vim.api.nvim_chan_send(term_job_id, text)
+                    end
+                    vim.cmd('startinsert')
+                end)
+            end
+        })
+
+        -- Use schedule to ensure the window is focused before entering insert mode
+        vim.schedule(function()
+            vim.cmd('startinsert')
+            -- Use feedkeys to trigger <Plug>(skkeleton-enable) which defaults to Hiragana
+            local keys = vim.api.nvim_replace_termcodes("<Plug>(skkeleton-enable)", true, false, true)
+            vim.api.nvim_feedkeys(keys, 'm', false)
+        end)
+    end
+
+    vim.keymap.set('t', '<C-j>', skk_term_input, { desc = "SKK Input for Terminal" })
 
     -- Configuration (Apply on initialization)
     vim.api.nvim_create_autocmd("User", {

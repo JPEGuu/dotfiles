@@ -74,6 +74,10 @@ fi
 # --- Distrobox Auto-Enter (Host Side) ---
 if command -v distrobox > /dev/null 2>&1; then
     if [ -t 1 ] && [ -z "$DISTROBOX_ENTERED" ]; then
+        # Fix Podman locks before entering the container
+        if command -v podman > /dev/null 2>&1; then
+            podman system renumber > /dev/null 2>&1
+        fi
         distrobox enter arch-dev
     fi
 fi
@@ -81,14 +85,6 @@ fi
 # --- Sheldon (Plugin Manager) ---
 if command -v sheldon > /dev/null 2>&1; then
     eval "$(sheldon source)"
-fi
-
-# --- Auto-start Zellij ---
-if command -v zellij > /dev/null 2>&1; then
-    # Only auto-start if in SSH, interactive, and not already in Zellij
-    if [[ -n "$SSH_CONNECTION" ]] && [[ -z "$ZELLIJ" ]]; then
-        zellij
-    fi
 fi
 
 # --- Extra Configs ---
@@ -103,4 +99,10 @@ fi
 # --- Zoxide ---
 if command -v zoxide > /dev/null 2>&1; then
     eval "$(zoxide init zsh)"
+fi
+
+# --- Neovim Shell Front-end ---
+# Start Neovim for terminal sessions, except when already inside it.
+if [[ -t 0 && -z "$NVIM" ]]; then
+    exec nvim -c "terminal" -c "file shell" -c "startinsert"
 fi
