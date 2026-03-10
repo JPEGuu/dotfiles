@@ -51,7 +51,12 @@ fi
 # Install packages from pkglist.txt
 if command -v pacman >/dev/null 2>&1 && [ -f "$DOTFILES_DIR/pkglist.txt" ]; then
     echo "📦 Installing packages from pkglist.txt..."
-    sudo pacman -S --needed --noconfirm - < "$DOTFILES_DIR/pkglist.txt"
+    if sudo pacman -Sy --needed --noconfirm - < "$DOTFILES_DIR/pkglist.txt"; then
+        echo "✅ Packages installed successfully."
+    else
+        echo "❌ ERROR: Failed to install packages." >&2
+        exit 1
+    fi
 fi
 
 echo "✅ Installation complete! Please restart your shell."

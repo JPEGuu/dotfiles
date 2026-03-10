@@ -101,8 +101,13 @@ if command -v zoxide > /dev/null 2>&1; then
     eval "$(zoxide init zsh)"
 fi
 
-# --- Neovim Shell Front-end ---
-# Start Neovim for terminal sessions, except when already inside it.
+# --- Session Management & Neovim Front-end ---
 if [[ -t 0 && -z "$NVIM" ]]; then
-    exec nvim -c "terminal" -c "file shell" -c "startinsert"
+    if [[ -z "$TMUX" ]]; then
+        # If not in tmux, attach to 'main' or create it
+        exec tmux new-session -A -s main
+    else
+        # If inside tmux, start Neovim for terminal sessions
+        exec nvim -c "terminal" -c "file shell" -c "startinsert"
+    fi
 fi
