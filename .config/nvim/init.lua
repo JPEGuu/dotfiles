@@ -27,6 +27,7 @@ now(function()
     -- Visual Options (Must be set before theme)
     vim.opt.termguicolors = true
     vim.opt.background = "dark"
+    -- vim.opt.ambw = "double"
 
     -- Auto-reload files when they change on disk
     vim.opt.autoread = true
@@ -126,7 +127,7 @@ later(function()
                 if stat and stat.type == 'link' then
                     icon, hl = '', 'MiniIconsCyan'
                 end
-                return icon, hl
+                return icon .. ' ', hl
             end,
         },
     })
