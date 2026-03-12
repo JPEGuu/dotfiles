@@ -66,6 +66,9 @@ now(function()
     vim.opt.fixendofline = false
     vim.opt.endofline = false
 
+    -- Clipboard sharing
+    vim.opt.clipboard = 'unnamedplus'
+
     -- Invisible characters
     vim.opt.list = true
     vim.opt.listchars = {
@@ -425,52 +428,30 @@ later(function()
     vim.keymap.set("i", "<C-j>", "<Plug>(skkeleton-toggle)")
     vim.keymap.set("c", "<C-j>", "<Plug>(skkeleton-toggle)")
 
-    -- Floating window input for Terminal mode
+    -- Command-line input for Terminal mode
     local function skk_term_input()
         local term_job_id = vim.b.terminal_job_id
-        local term_win = vim.api.nvim_get_current_win()
         if not term_job_id then
             vim.notify("No terminal job found in this buffer.", vim.log.levels.WARN)
             return
         end
 
-        local buf = vim.api.nvim_create_buf(false, true)
-        local win = vim.api.nvim_open_win(buf, true, {
-            relative = 'cursor', row = 1, col = 0,
-            width = 60, height = 1,
-            style = 'minimal', border = 'rounded',
-            title = ' SKK Input ', title_pos = 'center',
-        })
+        local job_id = term_job_id
 
-        -- Submit when leaving insert mode (Normal mode entered via <Esc> or <C-[>)
-        vim.api.nvim_create_autocmd('InsertLeave', {
-            buffer = buf,
-            once = true,
-            callback = function()
-                local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-                local text = table.concat(lines, "")
-                
-                vim.schedule(function()
-                    if vim.api.nvim_win_is_valid(win) then
-                        vim.api.nvim_win_close(win, true)
-                    end
-                    vim.cmd('call skkeleton#handle("disable", {})')
-                    
-                    vim.api.nvim_set_current_win(term_win)
-                    if text ~= "" then
-                        vim.api.nvim_chan_send(term_job_id, text)
-                    end
-                    vim.cmd('startinsert')
-                end)
-            end
-        })
-
-        -- Use schedule to ensure the window is focused before entering insert mode
+        -- Use schedule to trigger input() after leaving terminal mode context
         vim.schedule(function()
+            -- Trigger SKK enable (Control-j) for the upcoming input() prompt
+            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-j>", true, false, true), 'm', false)
+            
+            local ok, result = pcall(vim.fn.input, "SKK: ")
+
+            if ok and result and result ~= "" then
+                -- Send the string to the terminal job without a newline
+                vim.api.nvim_chan_send(job_id, result)
+            end
+            
+            -- Restart terminal insert mode
             vim.cmd('startinsert')
-            -- Use feedkeys to trigger <Plug>(skkeleton-enable) which defaults to Hiragana
-            local keys = vim.api.nvim_replace_termcodes("<Plug>(skkeleton-enable)", true, false, true)
-            vim.api.nvim_feedkeys(keys, 'm', false)
         end)
     end
 
@@ -509,8 +490,18 @@ later(function()
             }
             local hl = mode_map[mode]
             if hl then
+                -- For normal windows
                 vim.opt_local.cursorline = true
                 vim.opt_local.winhighlight = "CursorLine:" .. hl
+                -- For command line
+                if vim.fn.getcmdtype() ~= "" then
+                    vim.api.nvim_set_hl(0, "MsgArea", { link = hl })
+                    vim.cmd('redraw')
+                end
+            else
+                vim.opt_local.winhighlight = ""
+                vim.api.nvim_set_hl(0, "MsgArea", { link = "Normal" })
+                vim.cmd('redraw')
             end
         end,
     })
@@ -519,6 +510,13 @@ later(function()
         pattern = "skkeleton-disable-pre",
         callback = function()
             vim.opt_local.winhighlight = ""
+            vim.api.nvim_set_hl(0, "MsgArea", { link = "Normal" })
+        end,
+    })
+
+    vim.api.nvim_create_autocmd("CmdlineLeave", {
+        callback = function()
+            vim.api.nvim_set_hl(0, "MsgArea", { link = "Normal" })
         end,
     })
 end)
