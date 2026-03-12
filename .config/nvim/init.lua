@@ -59,6 +59,13 @@ now(function()
     -- Disable swap files
     vim.opt.swapfile = false
 
+    -- Disable editorconfig
+    vim.g.editorconfig = false
+
+    -- Disable automatic newline at the end of file
+    vim.opt.fixendofline = false
+    vim.opt.endofline = false
+
     -- Invisible characters
     vim.opt.list = true
     vim.opt.listchars = {
@@ -271,6 +278,9 @@ later(function()
     map("n", "]t", ":tabnext<CR>", { desc = "Next Tab" })
     map("n", "<Leader>tn", ":tabnew<CR>", { desc = "New Tab" })
     map("n", "<Leader>tc", ":tabclose<CR>", { desc = "Close Tab" })
+
+    -- Terminal
+    map("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit Terminal Mode" })
 end)
 
 -- =============================================================================
@@ -316,67 +326,73 @@ later(function()
     add({ source = 'williamboman/mason-lspconfig.nvim' })
     add({ source = 'neovim/nvim-lspconfig' })
 
-    safecall("mason", function(mason)
-        mason.setup()
+    -- Wait for plugins to be available in runtimepath
+    vim.schedule(function()
+        local servers = { "lua_ls", "ts_ls", "intelephense", "gopls", "rust_analyzer", "clojure_lsp" }
+
+        safecall("mason", function(mason)
+            mason.setup()
+        end)
 
         safecall("mason-lspconfig", function(mason_lspconfig)
-            local servers = { "lua_ls", "ts_ls", "intelephense", "gopls", "rust_analyzer", "clojure_lsp" }
             mason_lspconfig.setup({ ensure_installed = servers })
+        end)
 
-            safecall("lspconfig", function(lspconfig)
-                local capabilities = vim.lsp.protocol.make_client_capabilities()
+        safecall("lspconfig", function(lspconfig)
+            local capabilities = vim.lsp.protocol.make_client_capabilities()
 
-                -- Common setup options
-                local function setup_server(server_name)
-                    local opts = {
-                        capabilities = capabilities,
-                        on_attach = function(client, bufnr)
-                            -- Enable Mini.completion for LSP
-                            vim.api.nvim_buf_set_option(bufnr, 'omnifunc', 'v:lua.MiniCompletion.completefunc_lsp')
+            local on_attach = function(client, bufnr)
+                -- Enable Mini.completion for LSP
+                vim.api.nvim_buf_set_option(bufnr, 'omnifunc', 'v:lua.MiniCompletion.completefunc_lsp')
 
-                            -- Keymaps
-                            local keyopts = { buffer = bufnr }
-                            vim.keymap.set('n', 'gd', vim.lsp.buf.definition, keyopts)
-                            vim.keymap.set('n', 'K', vim.lsp.buf.hover, keyopts)
-                        end,
-                    }
+                -- Keymaps
+                local keyopts = { buffer = bufnr }
+                vim.keymap.set('n', 'gd', vim.lsp.buf.definition, keyopts)
+                vim.keymap.set('n', 'K', vim.lsp.buf.hover, keyopts)
+            end
 
-                    -- Specific settings for Lua
-                    if server_name == "lua_ls" then
-                        opts.settings = {
-                            Lua = {
-                                diagnostics = { globals = { "vim" } },
-                                workspace = { checkThirdParty = false },
-                                telemetry = { enable = false },
-                            }
+            -- Manually setup each server to avoid issues with setup_handlers
+            for _, server_name in ipairs(servers) do
+                local opts = {
+                    capabilities = capabilities,
+                    on_attach = on_attach,
+                }
+
+                if server_name == "lua_ls" then
+                    opts.settings = {
+                        Lua = {
+                            diagnostics = { globals = { "vim" } },
+                            workspace = { checkThirdParty = false },
+                            telemetry = { enable = false },
                         }
-                    end
+                    }
+                end
 
-                    if vim.fn.has('nvim-0.11') == 1 then
-                        vim.lsp.config(server_name, opts)
+                if vim.fn.has('nvim-0.11') == 1 then
+                    -- For Neovim 0.11+, use vim.lsp.config while pulling defaults from lspconfig.configs
+                    -- Accessing via require('lspconfig.configs') avoids the deprecation warning
+                    local config = require('lspconfig.configs')[server_name]
+                    if config then
+                        local final_config = vim.tbl_deep_extend("force", config.config_def, opts)
+                        vim.lsp.config(server_name, final_config)
                         vim.lsp.enable(server_name)
-                    else
-                        lspconfig[server_name].setup(opts)
                     end
+                else
+                    lspconfig[server_name].setup(opts)
                 end
+            end
 
-                -- Manually setup all ensured servers
-                for _, server in ipairs(servers) do
-                    setup_server(server)
-                end
-
-                -- LSP Diagnostics Icons (Nerd Fonts)
-                vim.diagnostic.config({
-                    signs = {
-                        text = {
-                            [vim.diagnostic.severity.ERROR] = '',
-                            [vim.diagnostic.severity.WARN] = '',
-                            [vim.diagnostic.severity.HINT] = '󰌵',
-                            [vim.diagnostic.severity.INFO] = '',
-                        },
+            -- LSP Diagnostics Icons (Nerd Fonts)
+            vim.diagnostic.config({
+                signs = {
+                    text = {
+                        [vim.diagnostic.severity.ERROR] = '',
+                        [vim.diagnostic.severity.WARN] = '',
+                        [vim.diagnostic.severity.HINT] = '󰌵',
+                        [vim.diagnostic.severity.INFO] = '',
                     },
-                })
-            end)
+                },
+            })
         end)
     end)
 end)
