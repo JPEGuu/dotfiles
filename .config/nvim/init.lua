@@ -295,7 +295,7 @@ local function safecall(module_name, callback)
     if ok then
         callback(module)
     else
-        -- Silently fail on first load, mini.deps will install it
+        print("Failed to load module: " .. module_name)
     end
 end
 
@@ -309,8 +309,8 @@ later(function()
         }
     })
 
-    safecall("nvim-treesitter.configs", function(configs)
-        configs.setup({
+    safecall("nvim-treesitter", function(ts)
+        ts.setup({
             ensure_installed = { "lua", "vim", "vimdoc", "markdown", "bash", "javascript", "typescript", "php", "go", "rust", "clojure" },
             auto_install = true,
             highlight = { enable = true },
@@ -331,7 +331,7 @@ later(function()
 
     -- Wait for plugins to be available in runtimepath
     vim.schedule(function()
-        local servers = { "lua_ls", "ts_ls", "intelephense", "gopls", "rust_analyzer", "clojure_lsp" }
+        local servers = { "lua_ls", "ts_ls", "phpactor", "gopls", "rust_analyzer", "clojure_lsp" }
 
         safecall("mason", function(mason)
             mason.setup()
@@ -371,18 +371,7 @@ later(function()
                     }
                 end
 
-                if vim.fn.has('nvim-0.11') == 1 then
-                    -- For Neovim 0.11+, use vim.lsp.config while pulling defaults from lspconfig.configs
-                    -- Accessing via require('lspconfig.configs') avoids the deprecation warning
-                    local config = require('lspconfig.configs')[server_name]
-                    if config then
-                        local final_config = vim.tbl_deep_extend("force", config.config_def, opts)
-                        vim.lsp.config(server_name, final_config)
-                        vim.lsp.enable(server_name)
-                    end
-                else
-                    lspconfig[server_name].setup(opts)
-                end
+                lspconfig[server_name].setup(opts)
             end
 
             -- LSP Diagnostics Icons (Nerd Fonts)
