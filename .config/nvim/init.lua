@@ -29,6 +29,19 @@ now(function()
     vim.opt.background = "dark"
     -- vim.opt.ambw = "double"
 
+    -- Neovim 0.11 Filetype Registry (Fixes checkhealth warnings)
+    vim.filetype.add({
+        extension = {
+            edn = "edn",
+            gowork = "gowork",
+            gotmpl = "gotmpl",
+        },
+        pattern = {
+            [".*%.jsx"] = "javascript.jsx",
+            [".*%.tsx"] = "typescript.tsx",
+        },
+    })
+
     -- Auto-reload files when they change on disk
     vim.opt.autoread = true
     vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold", "CursorHoldI" }, {
@@ -85,9 +98,34 @@ now(function()
     vim.opt.shiftwidth = 4
     vim.opt.expandtab  = true
 
+    -- Treesitter Configuration (Updated for latest nvim-treesitter/main)
+    add({
+        source = 'nvim-treesitter/nvim-treesitter',
+        hooks = { 
+            post_checkout = function() vim.cmd('TSUpdate') end,
+            post_install = function() vim.cmd('TSUpdate') end 
+        }
+    })
+    vim.cmd('packadd nvim-treesitter')
+
+    local ts_ok, ts = pcall(require, "nvim-treesitter")
+    if ts_ok then
+        -- New API to install parsers (Replaces ensure_installed)
+        ts.install({ "lua", "vim", "vimdoc", "markdown", "bash", "javascript", "typescript", "php", "go", "rust", "clojure" })
+        
+        -- Configure features
+        local configs_ok, configs = pcall(require, "nvim-treesitter.configs")
+        if configs_ok then
+            configs.setup({
+                highlight = { enable = true },
+            })
+        end
+    end
+
     -- Conjure Configuration (Set before plugin loads)
     vim.g["conjure#mapping#prefix"] = ","
     vim.g["conjure#log#hud#enabled"] = true
+    vim.g["conjure#client_on_load"] = true -- Re-enable auto-start now that Treesitter is working
 
     -- Changelog / Memo Configuration (Ref: https://homaju.hatenablog.com/entry/2022/06/16/080957)
     -- Automatically set user name from git config
@@ -299,25 +337,6 @@ local function safecall(module_name, callback)
     end
 end
 
--- Treesitter (Syntax Highlighting)
-later(function()
-    add({
-        source = 'nvim-treesitter/nvim-treesitter',
-        hooks = { 
-            post_checkout = function() vim.cmd('TSUpdate') end,
-            post_install = function() vim.cmd('TSUpdate') end 
-        }
-    })
-
-    safecall("nvim-treesitter", function(ts)
-        ts.setup({
-            ensure_installed = { "lua", "vim", "vimdoc", "markdown", "bash", "javascript", "typescript", "php", "go", "rust", "clojure" },
-            auto_install = true,
-            highlight = { enable = true },
-        })
-    end)
-end)
-
 -- Conjure (Clojure REPL Integration)
 later(function()
     add({ source = 'Olical/conjure' })
@@ -341,12 +360,22 @@ later(function()
             mason_lspconfig.setup({ ensure_installed = servers })
         end)
 
+        -- Suppress lspconfig deprecation warning in Neovim 0.11+
+        local original_notify = vim.notify
+        vim.notify = function(msg, level, opts)
+            local m = tostring(msg)
+            if m:find("deprecated") or m:find("lspconfig") then
+                return
+            end
+            original_notify(msg, level, opts)
+        end
+
         safecall("lspconfig", function(lspconfig)
             local capabilities = vim.lsp.protocol.make_client_capabilities()
 
             local on_attach = function(client, bufnr)
-                -- Enable Mini.completion for LSP
-                vim.api.nvim_buf_set_option(bufnr, 'omnifunc', 'v:lua.MiniCompletion.completefunc_lsp')
+                -- Enable Mini.completion for LSP (Use vim.bo to avoid deprecation warning)
+                vim.bo[bufnr].omnifunc = 'v:lua.MiniCompletion.completefunc_lsp'
 
                 -- Keymaps
                 local keyopts = { buffer = bufnr }
@@ -373,6 +402,9 @@ later(function()
 
                 lspconfig[server_name].setup(opts)
             end
+
+            -- Restore original notify after setup is complete
+            vim.notify = original_notify
 
             -- LSP Diagnostics Icons (Nerd Fonts)
             vim.diagnostic.config({
