@@ -1,6 +1,5 @@
 nikic/php-parser
 psr/container
-psr/log
 psy/psysh
 symfony/console
 symfony/deprecation-contracts
