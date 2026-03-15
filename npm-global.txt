@@ -1,0 +1,4 @@
+gemini-cli
+corepack
+is-ci
+npm
