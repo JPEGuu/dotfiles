@@ -1,0 +1,13 @@
+nikic/php-parser
+psr/container
+psr/log
+psy/psysh
+symfony/console
+symfony/deprecation-contracts
+symfony/polyfill-ctype
+symfony/polyfill-intl-grapheme
+symfony/polyfill-intl-normalizer
+symfony/polyfill-mbstring
+symfony/service-contracts
+symfony/string
+symfony/var-dumper
