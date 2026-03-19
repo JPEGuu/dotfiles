@@ -2,6 +2,7 @@
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKUP_DIR="$HOME/.dotfiles_backup_$(date +%Y%m%d_%H%M%S)"
+CLEANUP_LOG="$HOME/.dotfiles_cleanup_$(date +%Y%m%d_%H%M%S).log"
 
 setup_symlink() {
     local source_file="$1"
@@ -34,7 +35,31 @@ setup_symlink() {
     ln -s "$source_file" "$target_file"
 }
 
+cleanup_stale_symlinks() {
+    local removed=0
+
+    for link in "$HOME/.config"/* "$HOME/.bashrc" "$HOME/.zshrc"; do
+        if [ -L "$link" ] && [ ! -e "$link" ]; then
+            local target
+            target=$(readlink "$link")
+            # Only remove symlinks that were managed by dotfiles
+            if [[ "$target" == "$DOTFILES_DIR/"* ]]; then
+                echo "ln -s $(printf '%q' "$target") $(printf '%q' "$link")" >> "$CLEANUP_LOG"
+                echo "🗑️  Removing stale symlink: $link -> $target"
+                rm "$link"
+                removed=$((removed + 1))
+            fi
+        fi
+    done
+
+    if [ "$removed" -gt 0 ]; then
+        echo "📋 Cleanup log saved to $CLEANUP_LOG (run it to restore removed symlinks)"
+    fi
+}
+
 echo "🛠️  Starting Dotfiles Installation..."
+
+cleanup_stale_symlinks
 
 # Link shell configs
 setup_symlink "$DOTFILES_DIR/.bashrc" "$HOME/.bashrc"
@@ -51,11 +76,41 @@ fi
 # Install packages from pkglist.txt
 if command -v pacman >/dev/null 2>&1 && [ -f "$DOTFILES_DIR/pkglist.txt" ]; then
     echo "📦 Installing packages from pkglist.txt..."
-    if sudo pacman -Sy --needed --noconfirm - < "$DOTFILES_DIR/pkglist.txt"; then
+    if sudo pacman -Syu --needed --noconfirm - < "$DOTFILES_DIR/pkglist.txt"; then
         echo "✅ Packages installed successfully."
     else
         echo "❌ ERROR: Failed to install packages." >&2
         exit 1
+    fi
+fi
+
+# Install npm global packages
+if command -v npm >/dev/null 2>&1 && [ -f "$DOTFILES_DIR/npm-global.txt" ]; then
+    echo "📦 Installing npm global packages..."
+    if xargs npm install -g < "$DOTFILES_DIR/npm-global.txt"; then
+        echo "✅ npm global packages installed."
+    else
+        echo "⚠️  WARNING: Some npm global packages failed to install." >&2
+    fi
+fi
+
+# Install composer global packages
+if command -v composer >/dev/null 2>&1 && [ -f "$DOTFILES_DIR/composer-global.txt" ]; then
+    echo "📦 Installing composer global packages..."
+    if xargs composer global require < "$DOTFILES_DIR/composer-global.txt"; then
+        echo "✅ Composer global packages installed."
+    else
+        echo "⚠️  WARNING: Some composer global packages failed to install." >&2
+    fi
+fi
+
+# Install cargo packages
+if command -v cargo >/dev/null 2>&1 && [ -f "$DOTFILES_DIR/cargo-packages.txt" ]; then
+    echo "📦 Installing cargo packages..."
+    if xargs -I{} cargo install {} < "$DOTFILES_DIR/cargo-packages.txt"; then
+        echo "✅ Cargo packages installed."
+    else
+        echo "⚠️  WARNING: Some cargo packages failed to install." >&2
     fi
 fi
 

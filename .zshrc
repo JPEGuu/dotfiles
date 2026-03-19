@@ -5,13 +5,10 @@ if [ -f /etc/zshrc ]; then
     . /etc/zshrc
 fi
 
-# --- Variables ---
-export DOTFILES="$HOME/dotfiles"
-
-# --- Environment Variables ---
-export XDG_CONFIG_HOME="$HOME/.config"
-export EDITOR=nvim
-export VISUAL=nvim
+# --- Shared Environment Variables ---
+if [ -f "$HOME/.config/shell/env.sh" ]; then
+    source "$HOME/.config/shell/env.sh"
+fi
 
 # --- Secrets / Local Configs (.env) ---
 if [ -f "$HOME/.env" ]; then
@@ -22,11 +19,11 @@ fi
 
 # --- NVM (Node Version Manager) ---
 export NVM_DIR="$HOME/.config/nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 
 # Prepend user bin directories to PATH if they exist
-for dir in "$HOME/.local/bin" "$HOME/bin"; do
+for dir in "$HOME/.local/bin" "$HOME/bin" "$HOME/.config/composer/vendor/bin"; do
     if [ -d "$dir" ] && [[ ":$PATH:" != *":$dir:"* ]]; then
         PATH="$dir:$PATH"
     fi
@@ -45,14 +42,14 @@ setopt HIST_IGNORE_SPACE
 
 # Completion
 autoload -Uz compinit && compinit
-zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}' # Case insensitive
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
 zstyle ':completion:*' menu select
 
 # Prompt (Starship)
 if command -v starship > /dev/null 2>&1; then
     eval "$(starship init zsh)"
 else
-    # Fallback Prompt (Simple & Clean)
+    # Fallback Prompt
     autoload -Uz vcs_info
     precmd() { vcs_info }
     zstyle ':vcs_info:git:*' formats '(%b)'
@@ -61,25 +58,17 @@ else
 fi
 
 # --- Modular Configs ---
-# Aliases
 if [ -f "$HOME/.config/shell/aliases.sh" ]; then
     source "$HOME/.config/shell/aliases.sh"
 fi
 
-# Functions (Gemini, Pacman wrappers)
 if [ -f "$HOME/.config/zsh/functions.zsh" ]; then
     source "$HOME/.config/zsh/functions.zsh"
 fi
 
-# --- Distrobox Auto-Enter (Host Side) ---
-if command -v distrobox > /dev/null 2>&1; then
-    if [ -t 1 ] && [ -z "$DISTROBOX_ENTERED" ]; then
-        # Fix Podman locks before entering the container
-        if command -v podman > /dev/null 2>&1; then
-            podman system renumber > /dev/null 2>&1
-        fi
-        distrobox enter arch-dev
-    fi
+# --- Distrobox Auto-Enter ---
+if [ -f "$HOME/.config/shell/distrobox.sh" ]; then
+    source "$HOME/.config/shell/distrobox.sh"
 fi
 
 # --- Sheldon (Plugin Manager) ---
@@ -108,6 +97,7 @@ if [[ -t 0 && -z "$NVIM" ]]; then
         exec tmux new-session -A -s main
     else
         # If inside tmux, start Neovim for terminal sessions
-        exec nvim -c "terminal" -c "file shell" -c "startinsert"
+        # (no exec: when all buffers are closed, falls back to plain zsh)
+        nvim -c "terminal" -c "file shell" -c "startinsert"
     fi
 fi

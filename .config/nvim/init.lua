@@ -27,7 +27,6 @@ now(function()
     -- Visual Options (Must be set before theme)
     vim.opt.termguicolors = true
     vim.opt.background = "dark"
-    -- vim.opt.ambw = "double"
 
     -- Neovim 0.11 Filetype Registry (Fixes checkhealth warnings)
     vim.filetype.add({
@@ -112,7 +111,7 @@ now(function()
     if ts_ok then
         -- New API to install parsers (Replaces ensure_installed)
         ts.install({ "lua", "vim", "vimdoc", "markdown", "bash", "javascript", "typescript", "php", "go", "rust", "clojure" })
-        
+
         -- Configure features
         local configs_ok, configs = pcall(require, "nvim-treesitter.configs")
         if configs_ok then
@@ -126,6 +125,12 @@ now(function()
     vim.g["conjure#mapping#prefix"] = ","
     vim.g["conjure#log#hud#enabled"] = true
     vim.g["conjure#client_on_load"] = true -- Re-enable auto-start now that Treesitter is working
+    vim.g["conjure#mapping#doc_word"] = false -- Disable 'K' mapping to avoid errors in PHP and prioritize LSP hover
+
+    -- REPL configuration using generic command names
+    vim.g["conjure#client#javascript#stdio#command"] = "node"
+    vim.g["conjure#client#javascript#stdio#args"] = "-i"
+    vim.g["conjure#client#php#psysh#command"] = "psysh"
 
     -- Changelog / Memo Configuration (Ref: https://homaju.hatenablog.com/entry/2022/06/16/080957)
     -- Automatically set user name from git config
@@ -322,6 +327,13 @@ later(function()
 
     -- Terminal
     map("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit Terminal Mode" })
+    map( "n", "<Leader>\\",
+        function()
+            vim.cmd('botright split | terminal')
+            vim.cmd('resize 15') 
+        end,
+        { desc = "Open Terminal Window" }
+    )
 end)
 
 -- =============================================================================
@@ -352,6 +364,12 @@ later(function()
     vim.schedule(function()
         local servers = { "lua_ls", "ts_ls", "phpactor", "gopls", "rust_analyzer", "clojure_lsp" }
 
+        -- Add Mason binaries to PATH
+        local mason_bin = vim.fn.stdpath("data") .. "/mason/bin"
+        if vim.fn.isdirectory(mason_bin) == 1 then
+            vim.env.PATH = mason_bin .. ":" .. vim.env.PATH
+        end
+
         safecall("mason", function(mason)
             mason.setup()
         end)
@@ -359,6 +377,36 @@ later(function()
         safecall("mason-lspconfig", function(mason_lspconfig)
             mason_lspconfig.setup({ ensure_installed = servers })
         end)
+
+        -- LSP Diagnostics Icons (Nerd Fonts)
+        vim.diagnostic.config({
+            signs = {
+                text = {
+                    [vim.diagnostic.severity.ERROR] = '',
+                    [vim.diagnostic.severity.WARN] = '',
+                    [vim.diagnostic.severity.HINT] = '󰌵',
+                    [vim.diagnostic.severity.INFO] = '',
+                },
+            },
+        })
+
+        -- Ensure LSP keymaps are set on attach (Neovim 0.10+ style)
+        vim.api.nvim_create_autocmd('LspAttach', {
+            callback = function(args)
+                local bufnr = args.buf
+                local client = vim.lsp.get_client_by_id(args.data.client_id)
+
+                -- Keymaps
+                local keyopts = { buffer = bufnr, silent = true }
+                vim.keymap.set('n', 'gd', vim.lsp.buf.definition, keyopts)
+                vim.keymap.set('n', 'K', vim.lsp.buf.hover, keyopts)
+
+                -- Enable omnifunc for completion
+                if client and client.server_capabilities.completionProvider then
+                    vim.bo[bufnr].omnifunc = 'v:lua.MiniCompletion.completefunc_lsp'
+                end
+            end,
+        })
 
         -- Suppress lspconfig deprecation warning in Neovim 0.11+
         local original_notify = vim.notify
@@ -373,21 +421,10 @@ later(function()
         safecall("lspconfig", function(lspconfig)
             local capabilities = vim.lsp.protocol.make_client_capabilities()
 
-            local on_attach = function(client, bufnr)
-                -- Enable Mini.completion for LSP (Use vim.bo to avoid deprecation warning)
-                vim.bo[bufnr].omnifunc = 'v:lua.MiniCompletion.completefunc_lsp'
-
-                -- Keymaps
-                local keyopts = { buffer = bufnr }
-                vim.keymap.set('n', 'gd', vim.lsp.buf.definition, keyopts)
-                vim.keymap.set('n', 'K', vim.lsp.buf.hover, keyopts)
-            end
-
-            -- Manually setup each server to avoid issues with setup_handlers
+            -- Manually setup each server
             for _, server_name in ipairs(servers) do
                 local opts = {
                     capabilities = capabilities,
-                    on_attach = on_attach,
                 }
 
                 if server_name == "lua_ls" then
@@ -405,18 +442,6 @@ later(function()
 
             -- Restore original notify after setup is complete
             vim.notify = original_notify
-
-            -- LSP Diagnostics Icons (Nerd Fonts)
-            vim.diagnostic.config({
-                signs = {
-                    text = {
-                        [vim.diagnostic.severity.ERROR] = '',
-                        [vim.diagnostic.severity.WARN] = '',
-                        [vim.diagnostic.severity.HINT] = '󰌵',
-                        [vim.diagnostic.severity.INFO] = '',
-                    },
-                },
-            })
         end)
     end)
 end)
@@ -461,16 +486,21 @@ later(function()
 
         -- Use schedule to trigger input() after leaving terminal mode context
         vim.schedule(function()
-            -- Trigger SKK enable (Control-j) for the upcoming input() prompt
-            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-j>", true, false, true), 'm', false)
-            
+            -- Trigger SKK enable for the upcoming input() prompt
+            -- Using <Plug>(skkeleton-enable) instead of <C-j> to ensure it's ON even if it wasn't cleared.
+            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Plug>(skkeleton-enable)", true, false, true), 'm', false)
+
             local ok, result = pcall(vim.fn.input, "SKK: ")
+
+            -- Ensure Skkeleton is disabled after input() returns
+            -- This fixes the issue where the state is not cleared when returning to terminal mode.
+            pcall(vim.fn["skkeleton#disable"])
 
             if ok and result and result ~= "" then
                 -- Send the string to the terminal job without a newline
                 vim.api.nvim_chan_send(job_id, result)
             end
-            
+
             -- Restart terminal insert mode
             vim.cmd('startinsert')
         end)

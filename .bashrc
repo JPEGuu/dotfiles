@@ -5,8 +5,13 @@ if [ -f /etc/bashrc ]; then
     . /etc/bashrc
 fi
 
-# --- Variables ---
-export DOTFILES="$HOME/dotfiles"
+# --- Shared Environment Variables ---
+if [ -f "$HOME/.config/shell/env.sh" ]; then
+    source "$HOME/.config/shell/env.sh"
+fi
+
+# --- Path settings ---
+export PATH="$HOME/.local/bin:$HOME/.config/composer/vendor/bin:$PATH"
 
 # --- Zsh Auto-Start ---
 # If Zsh is available, launch it immediately.
@@ -18,29 +23,14 @@ fi
 # Fallback Settings (Used only if Zsh is NOT installed)
 # =================================================================
 
-# User specific environment
-for dir in "$HOME/.local/bin" "$HOME/bin"; do
-    if [ -d "$dir" ] && [[ ":$PATH:" != *":$dir:"* ]]; then
-        PATH="$dir:$PATH"
-    fi
-done
-export PATH
-
 # --- Modular Configs ---
-# Aliases
 if [ -f "$HOME/.config/shell/aliases.sh" ]; then
     source "$HOME/.config/shell/aliases.sh"
 fi
 
-# Enter Arch when login (Fallback for Bash users)
-if command -v distrobox > /dev/null 2>&1; then
-    if [ -t 1 ] && [ -z "$DISTROBOX_ENTERED" ]; then
-        # Fix Podman locks before entering the container
-        if command -v podman > /dev/null 2>&1; then
-            podman system renumber > /dev/null 2>&1
-        fi
-        distrobox enter arch-dev
-    fi
+# --- Distrobox Auto-Enter ---
+if [ -f "$HOME/.config/shell/distrobox.sh" ]; then
+    source "$HOME/.config/shell/distrobox.sh"
 fi
 
 # --- Zoxide ---
