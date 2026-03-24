@@ -325,14 +325,20 @@ later(function()
     map("n", "<Leader>tn", ":tabnew<CR>", { desc = "New Tab" })
     map("n", "<Leader>tc", ":tabclose<CR>", { desc = "Close Tab" })
 
+    -- Command-line navigation (Emacs-style)
+    -- NOTE: <C-f> overrides default "open cmdline window" (use q: instead)
+    -- NOTE: <C-a> overrides default "insert all matches"
+    map("c", "<C-b>", "<Left>",  { desc = "Cmdline: Move left" })
+    map("c", "<C-f>", "<Right>", { desc = "Cmdline: Move right" })
+    map("c", "<C-a>", "<Home>",  { desc = "Cmdline: Move to beginning" })
+    map("c", "<C-e>", "<End>",   { desc = "Cmdline: Move to end" })
+
     -- Terminal
     map("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit Terminal Mode" })
-    map( "n", "<Leader>\\",
-        function()
+    map( "n", "<Leader>\\", function()
             vim.cmd('botright split | terminal')
             vim.cmd('resize 15') 
-        end,
-        { desc = "Open Terminal Window" }
+        end, { desc = "Open Terminal Window" }
     )
 end)
 

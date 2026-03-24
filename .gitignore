@@ -1,2 +1,17 @@
 .env
 .zshrc.local
+
+# Claude Code: ローカル/動的データ
+claude/settings.local.json
+claude/history.jsonl
+claude/sessions/
+claude/session-env/
+claude/file-history/
+claude/backups/
+claude/cache/
+claude/shell-snapshots/
+claude/plans/
+claude/downloads/
+claude/telemetry/
+claude/plugins/
+claude/projects/
