@@ -109,13 +109,11 @@ now(function()
 
     local ts_ok, ts = pcall(require, "nvim-treesitter")
     if ts_ok then
-        -- New API to install parsers (Replaces ensure_installed)
-        ts.install({ "lua", "vim", "vimdoc", "markdown", "bash", "javascript", "typescript", "php", "go", "rust", "clojure" })
-
         -- Configure features
         local configs_ok, configs = pcall(require, "nvim-treesitter.configs")
         if configs_ok then
             configs.setup({
+                ensure_installed = { "lua", "vim", "vimdoc", "markdown", "bash", "javascript", "typescript", "php", "go", "rust", "clojure" },
                 highlight = { enable = true },
             })
         end
@@ -124,13 +122,10 @@ now(function()
     -- Conjure Configuration (Set before plugin loads)
     vim.g["conjure#mapping#prefix"] = ","
     vim.g["conjure#log#hud#enabled"] = true
-    vim.g["conjure#client_on_load"] = true -- Re-enable auto-start now that Treesitter is working
+    vim.g["conjure#client_on_load"] = false
     vim.g["conjure#mapping#doc_word"] = false -- Disable 'K' mapping to avoid errors in PHP and prioritize LSP hover
 
-    -- REPL configuration using generic command names
-    vim.g["conjure#client#javascript#stdio#command"] = "node"
-    vim.g["conjure#client#javascript#stdio#args"] = "-i"
-    vim.g["conjure#client#php#psysh#command"] = "psysh"
+    vim.g["conjure#filetypes"] = { "javascript", "php", "clojure" }
 
     -- Changelog / Memo Configuration (Ref: https://homaju.hatenablog.com/entry/2022/06/16/080957)
     -- Automatically set user name from git config
