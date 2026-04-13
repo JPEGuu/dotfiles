@@ -100,24 +100,28 @@ now(function()
     -- Treesitter Configuration (Updated for latest nvim-treesitter/main)
     add({
         source = 'nvim-treesitter/nvim-treesitter',
-        hooks = { 
-            post_checkout = function() vim.cmd('TSUpdate') end,
-            post_install = function() vim.cmd('TSUpdate') end 
-        }
+        -- Use 'master' while monitoring updates in 'main'
+        checkout = 'main',
+        -- Perform action after every checkout
+        hooks = { post_checkout = function() vim.cmd('TSUpdate') end },
     })
-    vim.cmd('packadd nvim-treesitter')
-
-    local ts_ok, ts = pcall(require, "nvim-treesitter")
-    if ts_ok then
-        -- Configure features
-        local configs_ok, configs = pcall(require, "nvim-treesitter.configs")
-        if configs_ok then
-            configs.setup({
-                ensure_installed = { "lua", "vim", "vimdoc", "markdown", "bash", "javascript", "typescript", "php", "go", "rust", "clojure" },
-                highlight = { enable = true },
-            })
-        end
-    end
+    -- Possible to immediately execute code which depends on the added plugin
+    require('nvim-treesitter').setup({
+         install_dir = vim.fn.stdpath('data') .. '/site'
+    })
+    require('nvim-treesitter').install({
+        "lua",
+        "vim",
+        "vimdoc",
+        "markdown",
+        "bash",
+        "javascript",
+        "typescript",
+        "php",
+        "go",
+        "rust",
+        "clojure"
+    }):wait(300000)
 
     -- Conjure Configuration (Set before plugin loads)
     vim.g["conjure#mapping#prefix"] = ","
