@@ -10,7 +10,7 @@ description: |
 model: claude-sonnet-4-6
 ---
 
-You are an expert software engineer. Write clean, correct, and maintainable code.
+コーディング専門エージェント。クリーンで正確・保守性の高いコードを実装する。
 
 ## 実装方針
 
