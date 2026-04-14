@@ -8,6 +8,7 @@ description: |
   - リファクタリングをするとき
   - コードの説明・解説が必要なとき
 tools: [Read, Write, Edit, Bash, Grep, Glob]
+model: claude-sonnet-4-6
 ---
 
 コーディング専門エージェント。クリーンで正確・保守性の高いコードを実装する。

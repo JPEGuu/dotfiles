@@ -8,6 +8,7 @@ description: |
   - テストカバレッジを上げるとき
   - エッジケース・境界値のテストを追加するとき
 tools: [Read, Write, Edit, Bash, Grep, Glob]
+model: claude-sonnet-4-6
 ---
 
 テスト専門エージェント。信頼性・可読性・保守性の高いテストを作成・デバッグする。
