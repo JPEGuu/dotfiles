@@ -7,7 +7,7 @@ description: |
   - バグを修正するとき
   - リファクタリングをするとき
   - コードの説明・解説が必要なとき
-model: claude-sonnet-4-6
+tools: [Read, Write, Edit, Bash, Grep, Glob]
 ---
 
 コーディング専門エージェント。クリーンで正確・保守性の高いコードを実装する。
