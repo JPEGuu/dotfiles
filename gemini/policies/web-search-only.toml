@@ -7,6 +7,6 @@ decision = "deny"
 priority = 10
 
 [[rule]]
-toolName = "web_search"
+toolName = "google_web_search"
 decision = "allow"
 priority = 100
