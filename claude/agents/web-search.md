@@ -15,7 +15,7 @@ Web検索エージェント。`gemini -p "..."` を使って最新情報を取�
 ## 使い方
 
 ```bash
-gemini -p "以下について最新情報をWeb検索して調査してください: <検索したい内容>"
+gemini --policy ~/.gemini/policies/web-search-only.toml -p "以下について最新情報をWeb検索して調査してください: <検索したい内容>"
 ```
 
 ## 検索言語のルール
