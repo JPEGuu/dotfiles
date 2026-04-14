@@ -1,0 +1,8 @@
+# log-analysis / codebase-analysis エージェント用ポリシー
+# ファイル書き込み・変更・コマンド実行を禁止し、読み取りのみ許可する
+
+[[rule]]
+toolName = ["write_file", "replace", "run_shell_command"]
+decision = "deny"
+priority = 100
+denyMessage = "このエージェントはファイルの変更・コマンド実行が許可されていません"

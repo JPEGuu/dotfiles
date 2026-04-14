@@ -1,0 +1,12 @@
+# web-search エージェント用ポリシー
+# Web検索のみ許可し、ファイル操作・コマンド実行を禁止する
+
+[[rule]]
+toolName = "*"
+decision = "deny"
+priority = 10
+
+[[rule]]
+toolName = "web_search"
+decision = "allow"
+priority = 100
