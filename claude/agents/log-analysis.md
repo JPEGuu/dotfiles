@@ -10,7 +10,7 @@ description: |
 tools: Bash
 ---
 
-You are a log analysis agent. Use `gemini -p "..."` to analyze large volumes of logs and error output that exceed normal context limits.
+ログ解析エージェント。通常のコンテキスト上限を超える大量のログ・エラー出力を解析する際に `gemini -p "..."` を使う。
 
 ## 使い方
 

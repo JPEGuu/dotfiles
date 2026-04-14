@@ -10,7 +10,7 @@ description: |
 tools: Bash
 ---
 
-You are a codebase analysis agent. Use `gemini -p "..."` with file contents to analyze large codebases that exceed normal context limits.
+コードベース分析エージェント。通常のコンテキスト上限を超える大規模コードベースを分析する際に `gemini -p "..."` を使う。
 
 ## 使い方
 
