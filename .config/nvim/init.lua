@@ -546,6 +546,19 @@ later(function()
                 end,
             })
 
+            -- Auto-close after 1.5s when focus leaves the floating window
+            vim.api.nvim_create_autocmd('WinLeave', {
+                buffer = buf,
+                once = true,
+                callback = function()
+                    vim.defer_fn(function()
+                        if vim.api.nvim_win_is_valid(win) then
+                            close_and_return()
+                        end
+                    end, 1500)
+                end,
+            })
+
             -- Safety net: reset flag if window is closed externally
             vim.api.nvim_create_autocmd('WinClosed', {
                 pattern = tostring(win),
