@@ -479,7 +479,7 @@ later(function()
     vim.keymap.set("i", "<C-j>", "<Plug>(skkeleton-toggle)")
     vim.keymap.set("c", "<C-j>", "<Plug>(skkeleton-toggle)")
 
-    -- Command-line input for Terminal mode
+    -- Floating window input for Terminal mode
     local function skk_term_input()
         local term_job_id = vim.b.terminal_job_id
         if not term_job_id then
@@ -488,27 +488,65 @@ later(function()
         end
 
         local job_id = term_job_id
+        local term_win = vim.api.nvim_get_current_win()
 
-        -- Use schedule to trigger input() after leaving terminal mode context
-        vim.schedule(function()
-            -- Trigger SKK enable for the upcoming input() prompt
-            -- Using <Plug>(skkeleton-enable) instead of <C-j> to ensure it's ON even if it wasn't cleared.
-            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Plug>(skkeleton-enable)", true, false, true), 'm', false)
+        -- Create a scratch buffer for Japanese input
+        local buf = vim.api.nvim_create_buf(false, true)
+        vim.bo[buf].bufhidden = 'wipe'
 
-            local ok, result = pcall(vim.fn.input, "SKK: ")
+        -- Open a 1-line floating window anchored to the bottom of the terminal window
+        local win_width = vim.api.nvim_win_get_width(term_win)
+        local win = vim.api.nvim_open_win(buf, true, {
+            relative = 'win',
+            win      = term_win,
+            row      = vim.api.nvim_win_get_height(term_win) - 2,
+            col      = 0,
+            width    = win_width,
+            height   = 1,
+            style    = 'minimal',
+            border   = 'single',
+            title    = ' SKK ',
+            title_pos = 'center',
+        })
 
-            -- Ensure Skkeleton is disabled after input() returns
-            -- This fixes the issue where the state is not cleared when returning to terminal mode.
-            pcall(vim.fn["skkeleton#disable"])
+        -- Enter insert mode with skkeleton enabled
+        vim.cmd('startinsert')
+        vim.api.nvim_feedkeys(
+            vim.api.nvim_replace_termcodes('<Plug>(skkeleton-enable)', true, false, true),
+            'm', false
+        )
 
-            if ok and result and result ~= "" then
-                -- Send the string to the terminal job without a newline
-                vim.api.nvim_chan_send(job_id, result)
+        -- Confirm: send buffer content to terminal and close
+        local function confirm()
+            local line = vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] or ''
+            pcall(vim.fn['skkeleton#disable'])
+            if vim.api.nvim_win_is_valid(win) then
+                vim.api.nvim_win_close(win, true)
             end
-
-            -- Restart terminal insert mode
+            if line ~= '' then
+                vim.api.nvim_chan_send(job_id, line)
+            end
+            vim.api.nvim_set_current_win(term_win)
             vim.cmd('startinsert')
-        end)
+        end
+
+        -- Cancel: discard and return to terminal
+        local function cancel()
+            pcall(vim.fn['skkeleton#disable'])
+            if vim.api.nvim_win_is_valid(win) then
+                vim.api.nvim_win_close(win, true)
+            end
+            vim.api.nvim_set_current_win(term_win)
+            vim.cmd('startinsert')
+        end
+
+        local opts = { buffer = buf, nowait = true }
+        vim.keymap.set('i', '<CR>',    confirm, opts)
+        vim.keymap.set('i', '<C-c>',   cancel,  opts)
+        vim.keymap.set('i', '<Esc>',   cancel,  opts)
+        vim.keymap.set('n', '<CR>',    confirm, opts)
+        vim.keymap.set('n', 'q',       cancel,  opts)
+        vim.keymap.set('n', '<Esc>',   cancel,  opts)
     end
 
     vim.keymap.set('t', '<C-j>', skk_term_input, { desc = "SKK Input for Terminal" })
