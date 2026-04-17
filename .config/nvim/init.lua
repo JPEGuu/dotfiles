@@ -546,18 +546,14 @@ later(function()
             }
             local hl = mode_map[mode]
             if hl then
-                -- For normal windows
                 vim.opt_local.cursorline = true
                 vim.opt_local.winhighlight = "CursorLine:" .. hl
-                -- For command line
                 if vim.fn.getcmdtype() ~= "" then
                     vim.api.nvim_set_hl(0, "MsgArea", { link = hl })
-                    vim.cmd('redraw')
                 end
             else
                 vim.opt_local.winhighlight = ""
                 vim.api.nvim_set_hl(0, "MsgArea", { link = "Normal" })
-                vim.cmd('redraw')
             end
         end,
     })
