@@ -479,7 +479,11 @@ later(function()
     vim.keymap.set("i", "<C-j>", "<Plug>(skkeleton-toggle)")
     vim.keymap.set("c", "<C-j>", "<Plug>(skkeleton-toggle)")
 
-    -- Command-line input for Terminal mode
+    -- Floating window input for Terminal mode
+    -- <CR> is intentionally NOT mapped buffer-locally.
+    -- skkeleton handles <CR> naturally: eggLikeNewline confirms conversion without a newline.
+    -- A <CR> outside of conversion inserts a newline into the float buffer,
+    -- which TextChangedI detects as the submit signal.
     local skk_term_input_active = false
     local function skk_term_input()
         if skk_term_input_active then return end
@@ -490,20 +494,72 @@ later(function()
         end
 
         local job_id = term_job_id
+        local term_win = vim.api.nvim_get_current_win()
         skk_term_input_active = true
 
         vim.schedule(function()
-            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Plug>(skkeleton-enable)", true, false, true), 'm', false)
-            local ok, result = pcall(vim.fn.input, "SKK: ")
-            pcall(vim.fn["skkeleton#disable"])
+            local width = math.max(40, math.floor(vim.o.columns * 0.6))
+            local buf = vim.api.nvim_create_buf(false, true)
+            local win = vim.api.nvim_open_win(buf, true, {
+                relative = 'editor',
+                row = math.floor((vim.o.lines - 3) / 2),
+                col = math.floor((vim.o.columns - width) / 2),
+                width = width,
+                height = 1,
+                style = 'minimal',
+                border = 'rounded',
+                title = ' SKK ',
+                title_pos = 'center',
+            })
+            vim.api.nvim_set_option_value('buftype', 'nofile', { buf = buf })
 
-            if ok and result and result ~= "" then
-                vim.api.nvim_chan_send(job_id, result)
+            local function close_and_return()
+                pcall(vim.fn['skkeleton#disable'])
+                if vim.api.nvim_win_is_valid(win) then
+                    vim.api.nvim_win_close(win, true)
+                end
+                if vim.api.nvim_buf_is_valid(buf) then
+                    vim.api.nvim_buf_delete(buf, { force = true })
+                end
+                skk_term_input_active = false
+                if vim.api.nvim_win_is_valid(term_win) then
+                    vim.api.nvim_set_current_win(term_win)
+                end
+                vim.cmd('startinsert')
             end
 
-            skk_term_input_active = false
-            vim.cmd('redraw')
+            -- Detect <CR> outside of henkan: a newline in the buffer means submit
+            vim.api.nvim_create_autocmd('TextChangedI', {
+                buffer = buf,
+                callback = function()
+                    if not vim.api.nvim_buf_is_valid(buf) then return end
+                    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+                    if #lines > 1 then
+                        local result = table.concat(lines, '')
+                        close_and_return()
+                        if result ~= '' then
+                            vim.api.nvim_chan_send(job_id, result)
+                        end
+                    end
+                end,
+            })
+
+            -- Safety net: reset flag if window is closed externally
+            vim.api.nvim_create_autocmd('WinClosed', {
+                pattern = tostring(win),
+                once = true,
+                callback = function()
+                    skk_term_input_active = false
+                end,
+            })
+
+            vim.keymap.set('i', '<Esc>', close_and_return, { buffer = buf, nowait = true })
+            vim.keymap.set('n', '<Esc>', close_and_return, { buffer = buf, nowait = true })
+
             vim.cmd('startinsert')
+            vim.api.nvim_feedkeys(
+                vim.api.nvim_replace_termcodes('<Plug>(skkeleton-enable)', true, false, true),
+                'm', false)
         end)
     end
 
