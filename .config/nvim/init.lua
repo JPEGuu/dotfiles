@@ -480,7 +480,9 @@ later(function()
     vim.keymap.set("c", "<C-j>", "<Plug>(skkeleton-toggle)")
 
     -- Command-line input for Terminal mode
+    local skk_term_input_active = false
     local function skk_term_input()
+        if skk_term_input_active then return end
         local term_job_id = vim.b.terminal_job_id
         if not term_job_id then
             vim.notify("No terminal job found in this buffer.", vim.log.levels.WARN)
@@ -488,25 +490,18 @@ later(function()
         end
 
         local job_id = term_job_id
+        skk_term_input_active = true
 
-        -- Use schedule to trigger input() after leaving terminal mode context
         vim.schedule(function()
-            -- Trigger SKK enable for the upcoming input() prompt
-            -- Using <Plug>(skkeleton-enable) instead of <C-j> to ensure it's ON even if it wasn't cleared.
             vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Plug>(skkeleton-enable)", true, false, true), 'm', false)
-
             local ok, result = pcall(vim.fn.input, "SKK: ")
-
-            -- Ensure Skkeleton is disabled after input() returns
-            -- This fixes the issue where the state is not cleared when returning to terminal mode.
             pcall(vim.fn["skkeleton#disable"])
 
             if ok and result and result ~= "" then
-                -- Send the string to the terminal job without a newline
                 vim.api.nvim_chan_send(job_id, result)
             end
 
-            -- Restart terminal insert mode
+            skk_term_input_active = false
             vim.cmd('redraw')
             vim.cmd('startinsert')
         end)
@@ -547,13 +542,17 @@ later(function()
             }
             local hl = mode_map[mode]
             if hl then
-                vim.opt_local.cursorline = true
-                vim.opt_local.winhighlight = "CursorLine:" .. hl
+                if not skk_term_input_active then
+                    vim.opt_local.cursorline = true
+                    vim.opt_local.winhighlight = "CursorLine:" .. hl
+                end
                 if vim.fn.getcmdtype() ~= "" then
                     vim.api.nvim_set_hl(0, "MsgArea", { link = hl })
                 end
             else
-                vim.opt_local.winhighlight = ""
+                if not skk_term_input_active then
+                    vim.opt_local.winhighlight = ""
+                end
                 vim.api.nvim_set_hl(0, "MsgArea", { link = "Normal" })
             end
         end,
