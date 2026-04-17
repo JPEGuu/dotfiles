@@ -556,10 +556,13 @@ later(function()
             vim.keymap.set('i', '<Esc>', close_and_return, { buffer = buf, nowait = true })
             vim.keymap.set('n', '<Esc>', close_and_return, { buffer = buf, nowait = true })
 
+            vim.wo[win].cursorline = true
             vim.cmd('startinsert')
-            vim.api.nvim_feedkeys(
-                vim.api.nvim_replace_termcodes('<Plug>(skkeleton-enable)', true, false, true),
-                'm', false)
+            vim.schedule(function()
+                vim.api.nvim_feedkeys(
+                    vim.api.nvim_replace_termcodes('<Plug>(skkeleton-enable)', true, false, true),
+                    'm', false)
+            end)
         end)
     end
 
@@ -598,17 +601,13 @@ later(function()
             }
             local hl = mode_map[mode]
             if hl then
-                if not skk_term_input_active then
-                    vim.opt_local.cursorline = true
-                    vim.opt_local.winhighlight = "CursorLine:" .. hl
-                end
+                vim.opt_local.cursorline = true
+                vim.opt_local.winhighlight = "CursorLine:" .. hl
                 if vim.fn.getcmdtype() ~= "" then
                     vim.api.nvim_set_hl(0, "MsgArea", { link = hl })
                 end
             else
-                if not skk_term_input_active then
-                    vim.opt_local.winhighlight = ""
-                end
+                vim.opt_local.winhighlight = ""
                 vim.api.nvim_set_hl(0, "MsgArea", { link = "Normal" })
             end
         end,
