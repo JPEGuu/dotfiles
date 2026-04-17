@@ -498,12 +498,12 @@ later(function()
         skk_term_input_active = true
 
         vim.schedule(function()
-            local width = math.max(40, math.floor(vim.o.columns * 0.6))
+            local width = vim.o.columns - 2
             local buf = vim.api.nvim_create_buf(false, true)
             local win = vim.api.nvim_open_win(buf, true, {
                 relative = 'editor',
-                row = math.floor((vim.o.lines - 3) / 2),
-                col = math.floor((vim.o.columns - width) / 2),
+                row = vim.o.lines - 4,
+                col = 1,
                 width = width,
                 height = 1,
                 style = 'minimal',
