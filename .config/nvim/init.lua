@@ -507,6 +507,7 @@ later(function()
             end
 
             -- Restart terminal insert mode
+            vim.cmd('redraw')
             vim.cmd('startinsert')
         end)
     end
