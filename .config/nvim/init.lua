@@ -480,10 +480,6 @@ later(function()
     vim.keymap.set("c", "<C-j>", "<Plug>(skkeleton-toggle)")
 
     -- Floating window input for Terminal mode
-    -- <CR> is intentionally NOT mapped buffer-locally.
-    -- skkeleton handles <CR> naturally: eggLikeNewline confirms conversion without a newline.
-    -- A <CR> outside of conversion inserts a newline into the float buffer,
-    -- which TextChangedI detects as the submit signal.
     local skk_term_input_active = false
     local function skk_term_input()
         if skk_term_input_active then return end
