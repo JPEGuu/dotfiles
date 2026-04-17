@@ -553,7 +553,6 @@ later(function()
                 end,
             })
 
-            vim.keymap.set('i', '<Esc>', close_and_return, { buffer = buf, nowait = true })
             vim.keymap.set('n', '<Esc>', close_and_return, { buffer = buf, nowait = true })
 
             vim.wo[win].cursorline = true
