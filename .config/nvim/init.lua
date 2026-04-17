@@ -536,10 +536,12 @@ later(function()
                     local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
                     if #lines > 1 then
                         local result = table.concat(lines, '')
-                        close_and_return()
-                        if result ~= '' then
-                            vim.api.nvim_chan_send(job_id, result)
-                        end
+                        vim.schedule(function()
+                            close_and_return()
+                            if result ~= '' then
+                                vim.api.nvim_chan_send(job_id, result)
+                            end
+                        end)
                     end
                 end,
             })
