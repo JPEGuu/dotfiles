@@ -557,12 +557,10 @@ later(function()
             vim.keymap.set('n', '<Esc>', close_and_return, { buffer = buf, nowait = true })
 
             vim.wo[win].cursorline = true
-            vim.cmd('startinsert')
-            vim.schedule(function()
-                vim.api.nvim_feedkeys(
-                    vim.api.nvim_replace_termcodes('<Plug>(skkeleton-enable)', true, false, true),
-                    'm', false)
-            end)
+            -- Feed 'i' (enter insert mode) then skkeleton-enable as a single typeahead sequence
+            vim.api.nvim_feedkeys(
+                'i' .. vim.api.nvim_replace_termcodes('<Plug>(skkeleton-enable)', true, false, true),
+                'n', false)
         end)
     end
 
