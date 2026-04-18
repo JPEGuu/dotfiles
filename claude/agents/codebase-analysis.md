@@ -18,13 +18,13 @@ model: claude-haiku-4-5-20251001
 リポジトリ全体を渡す場合:
 
 ```bash
-find . -type f -name "*.ts" | head -50 | xargs cat | gemini -p "以下のコードベースを分析してください: <分析内容>"
+find . -type f -name "*.ts" | head -50 | xargs cat | gemini --policy ~/dotfiles/gemini/policies/read-only.toml -p "以下のコードベースを分析してください: <分析内容>"
 ```
 
 特定ディレクトリを渡す場合:
 
 ```bash
-cat src/**/*.ts | gemini -p "<分析内容>"
+cat src/**/*.ts | gemini --policy ~/dotfiles/gemini/policies/read-only.toml -p "<分析内容>"
 ```
 
 ## 注意事項
