@@ -18,13 +18,13 @@ model: claude-haiku-4-5-20251001
 ログファイルを渡す場合:
 
 ```bash
-cat <logfile> | gemini --policy ~/dotfiles/gemini/policies/read-only.toml -p "以下のログを解析して根本原因と解決策を教えてください"
+cat <logfile> | gemini -p "以下のログを解析して根本原因と解決策を教えてください"
 ```
 
 コマンド出力を直接渡す場合:
 
 ```bash
-<command> 2>&1 | gemini --policy ~/dotfiles/gemini/policies/read-only.toml -p "以下のエラー出力を解析してください"
+<command> 2>&1 | gemini -p "以下のエラー出力を解析してください"
 ```
 
 ## 注意事項

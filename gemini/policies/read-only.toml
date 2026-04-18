@@ -1,0 +1,7 @@
+# 全セッション共通ポリシー: ファイル書き込み・変更を禁止
+
+[[rule]]
+toolName = ["write_file", "replace"]
+decision = "deny"
+priority = 100
+denyMessage = "ファイルの書き込み・変更は許可されていません"
