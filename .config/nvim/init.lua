@@ -120,7 +120,8 @@ now(function()
         "php",
         "go",
         "rust",
-        "clojure"
+        "clojure",
+        "commonlisp"
     }):wait(300000)
 
     -- Conjure Configuration (Set before plugin loads)
@@ -129,7 +130,7 @@ now(function()
     vim.g["conjure#client_on_load"] = false
     vim.g["conjure#mapping#doc_word"] = false -- Disable 'K' mapping to avoid errors in PHP and prioritize LSP hover
 
-    vim.g["conjure#filetypes"] = { "javascript", "php", "clojure" }
+    vim.g["conjure#filetypes"] = { "javascript", "php", "clojure", "lisp" }
 
     -- Changelog / Memo Configuration (Ref: https://homaju.hatenablog.com/entry/2022/06/16/080957)
     -- Automatically set user name from git config
