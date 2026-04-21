@@ -114,4 +114,13 @@ if command -v cargo >/dev/null 2>&1 && [ -f "$DOTFILES_DIR/cargo-packages.txt" ]
     fi
 fi
 
+# Link Claude Code global config
+setup_symlink "$DOTFILES_DIR/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
+setup_symlink "$DOTFILES_DIR/claude/settings.json" "$HOME/.claude/settings.json"
+setup_symlink "$DOTFILES_DIR/claude/commands" "$HOME/.claude/commands"
+setup_symlink "$DOTFILES_DIR/claude/agents" "$HOME/.claude/agents"
+
+# Link Gemini CLI global context (GEMINI.md is already linked at ~/GEMINI.md)
+setup_symlink "$DOTFILES_DIR/GEMINI.md" "$HOME/GEMINI.md"
+
 echo "✅ Installation complete! Please restart your shell."

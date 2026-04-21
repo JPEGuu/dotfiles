@@ -1,12 +1,34 @@
 {
   "model": "sonnet",
   "effortLevel": "high",
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
   "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash(git:*)"
+    ],
     "deny": [
       "Read(.env)",
       "Read(.env.*)",
       "Read(**/.env)",
       "Read(**/.env.*)"
+    ]
+  },
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'echo \"📝 Reminder: Record results in CHANGELOG.md before ending session\" >&2'"
+          }
+        ]
+      }
     ]
   }
 }
