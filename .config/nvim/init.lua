@@ -174,7 +174,15 @@ later(function()
     require("mini.files").setup({
         content = {
             prefix = function(entry)
-                local icon, hl = MiniIcons.get(entry.fs_type, entry.name)
+                local fs_type = entry.fs_type
+                local name = entry.name
+                if type(fs_type) ~= 'string' or type(name) ~= 'string' then
+                    return ' ', 'MiniIconsGrey'
+                end
+                if fs_type ~= 'file' and fs_type ~= 'directory' then
+                    fs_type = 'file'
+                end
+                local icon, hl = MiniIcons.get(fs_type, name)
                 local stat = vim.loop.fs_lstat(entry.path)
                 if stat and stat.type == 'link' then
                     icon, hl = '', 'MiniIconsCyan'
