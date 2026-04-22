@@ -1,0 +1,21 @@
+{
+  "security": {
+    "auth": {
+      "selectedType": "gemini-api-key"
+    },
+    "enablePermanentToolApproval": true
+  },
+  "general": {
+    "vimMode": false,
+    "previewFeatures": true,
+    "defaultApprovalMode": "auto_edit",
+    "sessionRetention": {
+      "warningAcknowledged": true,
+      "enabled": true,
+      "maxAge": "30d"
+    }
+  },
+  "ui": {
+    "theme": "GitHub"
+  }
+}
