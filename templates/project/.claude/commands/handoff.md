@@ -1,11 +1,13 @@
 ---
-description: Gemini への引き継ぎコンテキストを生成し .agents/handoff/claude_to_gemini.md に上書き保存する
-allowed-tools: Read, Glob, Grep, Bash(git:*)
+description: Gemini への引き継ぎコンテキストを生成し、gemini -p で直接セッションを起動する
+allowed-tools: Read, Glob, Grep, Bash(git:*), Bash(gemini:*)
 ---
 
-## 引き継ぎファイル生成
+## 手順
 
-`.agents/handoff/claude_to_gemini.md` を以下のテンプレートで**上書き**する：
+### 1. 引き継ぎファイルの生成
+
+`git log --oneline -5` と今セッションの作業内容を元に、`.agents/handoff/claude_to_gemini.md` を以下のテンプレートで**上書き**する：
 
 ```markdown
 # Claude から Gemini への引き継ぎ事項
@@ -30,4 +32,12 @@ allowed-tools: Read, Glob, Grep, Bash(git:*)
 <!-- 既知の問題、制約事項など -->
 ```
 
-git の変更履歴（`git log --oneline -5`）と今セッションの作業内容を元に、各セクションを埋めてから保存する。
+### 2. Gemini セッションの起動
+
+引き継ぎファイルを保存したら、以下のコマンドで Gemini に直接渡す：
+
+```bash
+gemini -p "$(cat .agents/handoff/claude_to_gemini.md)"
+```
+
+これにより Gemini が引き継ぎ内容を受け取った状態でセッションが始まる。
