@@ -1,6 +1,6 @@
 ---
-description: セッション終了。変更サマリー作成・docs同期確認・CHANGELOG追記・引き継ぎファイル生成・Gemini起動
-allowed-tools: Read, Glob, Grep, Bash(git:*), Bash(gemini:*)
+description: セッション終了。変更サマリー作成・docs同期確認・CHANGELOG追記・引き継ぎファイル生成
+allowed-tools: Read, Glob, Grep, Bash(git:*)
 ---
 
 ## セッション終了チェックリスト
@@ -32,7 +32,7 @@ git status
 ### 4. 未コミット変更の確認
 未コミットの変更がある場合、ユーザーにコミットを促す。
 
-### 5. 引き継ぎファイルの生成・Gemini 起動
+### 5. 引き継ぎファイルの生成（Gemini へ）
 `.agents/handoff/` ディレクトリが存在する場合、`claude_to_gemini.md` を上書きする：
 
 ```markdown
@@ -56,12 +56,6 @@ git status
 
 ## 4. 注意事項
 <!-- 既知の問題、制約事項など -->
-```
-
-保存後、以下で Gemini セッションを起動する：
-
-```bash
-gemini -p "$(cat .agents/handoff/claude_to_gemini.md)"
 ```
 
 ### 6. 最終報告
