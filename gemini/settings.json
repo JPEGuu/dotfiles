@@ -8,7 +8,7 @@
   "general": {
     "vimMode": false,
     "previewFeatures": true,
-    "defaultApprovalMode": "auto_edit",
+    "defaultApprovalMode": "default",
     "sessionRetention": {
       "warningAcknowledged": true,
       "enabled": true,

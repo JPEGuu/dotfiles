@@ -120,8 +120,8 @@ setup_symlink "$DOTFILES_DIR/claude/settings.json" "$HOME/.claude/settings.json"
 setup_symlink "$DOTFILES_DIR/claude/commands" "$HOME/.claude/commands"
 setup_symlink "$DOTFILES_DIR/claude/agents" "$HOME/.claude/agents"
 
-# Link Gemini CLI global context (GEMINI.md is already linked at ~/GEMINI.md)
-setup_symlink "$DOTFILES_DIR/GEMINI.md" "$HOME/GEMINI.md"
+# Link Gemini CLI global config
+setup_symlink "$DOTFILES_DIR/gemini/GEMINI.md" "$HOME/.gemini/GEMINI.md"
 setup_symlink "$DOTFILES_DIR/gemini/skills" "$HOME/.gemini/skills"
 setup_symlink "$DOTFILES_DIR/gemini/settings.json" "$HOME/.gemini/settings.json"
 
