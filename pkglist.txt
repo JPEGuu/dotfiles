@@ -9,6 +9,9 @@ clojure
 composer
 deno
 diffutils
+docker
+docker-buildx
+docker-compose
 fastfetch
 fd
 ffmpegthumbnailer
