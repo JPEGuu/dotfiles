@@ -84,13 +84,24 @@ if command -v pacman >/dev/null 2>&1 && [ -f "$DOTFILES_DIR/pkglist.txt" ]; then
     fi
 fi
 
-# Load nvm if available to avoid EACCES on global npm installs
-if [ -s "$HOME/.config/nvm/nvm.sh" ]; then
-    export NVM_DIR="$HOME/.config/nvm"
-    \. "$NVM_DIR/nvm.sh"
-elif [ -s "$HOME/.nvm/nvm.sh" ]; then
-    export NVM_DIR="$HOME/.nvm"
-    \. "$NVM_DIR/nvm.sh"
+# Ensure nvm is installed and loaded
+export NVM_DIR="$HOME/.config/nvm"
+if [ ! -d "$NVM_DIR" ]; then
+    echo "📦 Installing nvm..."
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+fi
+
+# Load nvm
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# Ensure Node.js and npm are installed via nvm
+if command -v nvm >/dev/null 2>&1; then
+    echo "📦 Ensuring Node.js (LTS) is installed via nvm..."
+    nvm install --lts
+    nvm use --lts
+    nvm alias default 'lts/*'
+else
+    echo "❌ ERROR: Failed to load nvm. Skipping npm package installation." >&2
 fi
 
 # Install npm global packages
