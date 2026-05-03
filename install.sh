@@ -143,6 +143,9 @@ if command -v cargo >/dev/null 2>&1 && [ -f "$DOTFILES_DIR/cargo-packages.txt" ]
     echo "✅ Cargo packages installation process completed."
 fi
 
+# Link rtk global config
+setup_symlink "$DOTFILES_DIR/.config/rtk" "$HOME/.config/rtk"
+
 # Link Claude Code global config
 setup_symlink "$DOTFILES_DIR/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
 setup_symlink "$DOTFILES_DIR/claude/settings.json" "$HOME/.claude/settings.json"
