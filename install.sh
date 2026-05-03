@@ -127,6 +127,12 @@ fi
 # Install cargo packages
 if command -v cargo >/dev/null 2>&1 && [ -f "$DOTFILES_DIR/cargo-packages.txt" ]; then
     echo "📦 Installing cargo packages..."
+    # Ensure a default rust toolchain is set before trying to install
+    if command -v rustup >/dev/null 2>&1 && ! rustc --version >/dev/null 2>&1; then
+        echo "📦 Setting default Rust toolchain to stable..."
+        rustup default stable
+    fi
+
     while IFS= read -r line || [ -n "$line" ]; do
         [[ -z "$line" || "$line" =~ ^# ]] && continue
         # shellcheck disable=SC2086
