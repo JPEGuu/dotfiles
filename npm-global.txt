@@ -1,3 +1,4 @@
-gemini-cli
+@google/gemini-cli
 corepack
 npm
+@anthropic-ai/claude-code
