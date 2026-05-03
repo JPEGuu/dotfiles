@@ -84,6 +84,15 @@ if command -v pacman >/dev/null 2>&1 && [ -f "$DOTFILES_DIR/pkglist.txt" ]; then
     fi
 fi
 
+# Load nvm if available to avoid EACCES on global npm installs
+if [ -s "$HOME/.config/nvm/nvm.sh" ]; then
+    export NVM_DIR="$HOME/.config/nvm"
+    \. "$NVM_DIR/nvm.sh"
+elif [ -s "$HOME/.nvm/nvm.sh" ]; then
+    export NVM_DIR="$HOME/.nvm"
+    \. "$NVM_DIR/nvm.sh"
+fi
+
 # Install npm global packages
 if command -v npm >/dev/null 2>&1 && [ -f "$DOTFILES_DIR/npm-global.txt" ]; then
     echo "📦 Installing npm global packages..."
@@ -107,11 +116,14 @@ fi
 # Install cargo packages
 if command -v cargo >/dev/null 2>&1 && [ -f "$DOTFILES_DIR/cargo-packages.txt" ]; then
     echo "📦 Installing cargo packages..."
-    if xargs -I{} cargo install {} < "$DOTFILES_DIR/cargo-packages.txt"; then
-        echo "✅ Cargo packages installed."
-    else
-        echo "⚠️  WARNING: Some cargo packages failed to install." >&2
-    fi
+    while IFS= read -r line || [ -n "$line" ]; do
+        [[ -z "$line" || "$line" =~ ^# ]] && continue
+        # shellcheck disable=SC2086
+        if ! cargo install $line; then
+            echo "⚠️  WARNING: Failed to install: $line" >&2
+        fi
+    done < "$DOTFILES_DIR/cargo-packages.txt"
+    echo "✅ Cargo packages installation process completed."
 fi
 
 # Link Claude Code global config
