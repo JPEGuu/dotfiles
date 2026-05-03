@@ -1,0 +1,4 @@
+# Cargo packages to install
+# Format: package-name or --git <url> [--other-options]
+
+--git https://github.com/rtk-ai/rtk
