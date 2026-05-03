@@ -89,9 +89,3 @@ fi
 if command -v zoxide > /dev/null 2>&1; then
     eval "$(zoxide init zsh)"
 fi
-
-# --- Session Management ---
-# Automatically start/attach to a tmux session named 'main'
-if [[ -t 0 && -z "$TMUX" && -z "$NVIM" ]]; then
-    exec tmux new-session -A -s main
-fi
