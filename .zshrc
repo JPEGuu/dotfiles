@@ -23,7 +23,7 @@ export NVM_DIR="$HOME/.config/nvm"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 
 # Prepend user bin directories to PATH if they exist
-for dir in "$HOME/.local/bin" "$HOME/bin" "$HOME/.config/composer/vendor/bin"; do
+for dir in "$HOME/.local/bin" "$HOME/bin" "$HOME/.config/composer/vendor/bin" "$HOME/.cargo/bin"; do
     if [ -d "$dir" ] && [[ ":$PATH:" != *":$dir:"* ]]; then
         PATH="$dir:$PATH"
     fi
@@ -90,14 +90,8 @@ if command -v zoxide > /dev/null 2>&1; then
     eval "$(zoxide init zsh)"
 fi
 
-# --- Session Management & Neovim Front-end ---
-if [[ -t 0 && -z "$NVIM" ]]; then
-    if [[ -z "$TMUX" ]]; then
-        # If not in tmux, attach to 'main' or create it
-        exec tmux new-session -A -s main
-    else
-        # If inside tmux, start Neovim for terminal sessions
-        # (no exec: when all buffers are closed, falls back to plain zsh)
-        nvim -c "terminal" -c "file shell" -c "startinsert"
-    fi
+# --- Session Management ---
+# Automatically start/attach to a tmux session named 'main'
+if [[ -t 0 && -z "$TMUX" && -z "$NVIM" ]]; then
+    exec tmux new-session -A -s main
 fi
