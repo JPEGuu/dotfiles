@@ -90,10 +90,10 @@ mv ~/.config/rtk/config.toml ~/dotfiles/.config/rtk/
 
 ### 5. AI アシスタント用フックの有効化
 
-インストールした `rtk` を Claude および Gemini CLI に認識させるため、初期化コマンドを実行する。
+インストールした `rtk` を Claude および Gemini CLI に認識させるため、初期化コマンドを実行する。グローバル設定として適用するために `-g` フラグを使用する。
 
 ```bash
-rtk init --claude
-rtk init --gemini
+rtk init -g --claude
+rtk init -g --gemini
 ```
-これにより、各ツールの設定ファイル（`.claude.json` や `.gemini/settings.json` など）が更新され、コマンド実行時に `rtk` が介入するようになる。
+これにより、各ツールの設定ファイル（`.claude.json` や `.gemini/settings.json` など）が更新され、コマンド実行時に `rtk` が介入するようになる。また、この手順は `install.sh` に組み込まれたため、以後のセットアップでは自動的に実行される。

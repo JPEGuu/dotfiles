@@ -106,8 +106,9 @@ now(function()
         hooks = { post_checkout = function() vim.cmd('TSUpdate') end },
     })
     -- Possible to immediately execute code which depends on the added plugin
+    local ts_install_dir = vim.fs.normalize(vim.fn.stdpath('data') .. '/site')
     require('nvim-treesitter').setup({
-         install_dir = vim.fn.stdpath('data') .. '/site'
+         install_dir = ts_install_dir
     })
     require('nvim-treesitter').install({
         "lua",
