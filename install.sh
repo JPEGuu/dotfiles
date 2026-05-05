@@ -88,6 +88,7 @@ fi
 export NVM_DIR="$HOME/.config/nvm"
 if [ ! -d "$NVM_DIR" ]; then
     echo "📦 Installing nvm..."
+    mkdir -p "$NVM_DIR"
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 fi
 
@@ -143,6 +144,9 @@ if command -v cargo >/dev/null 2>&1 && [ -f "$DOTFILES_DIR/cargo-packages.txt" ]
     echo "✅ Cargo packages installation process completed."
 fi
 
+# Ensure cargo bin is in PATH for subsequent commands
+export PATH="$HOME/.cargo/bin:$PATH"
+
 # Link rtk global config
 setup_symlink "$DOTFILES_DIR/.config/rtk" "$HOME/.config/rtk"
 
@@ -155,7 +159,7 @@ setup_symlink "$DOTFILES_DIR/claude/agents" "$HOME/.claude/agents"
 # Initialize rtk hook for Claude Code
 if command -v rtk >/dev/null 2>&1; then
     echo "🔧 Initializing rtk hook for Claude Code..."
-    rtk init -g --claude
+    rtk init -g --claude-md
 fi
 
 # Link Gemini CLI global config
