@@ -5,9 +5,9 @@
 {
   imports = [
     ./packages.nix             # home.packages（旧 pkglist.txt 相当）
-    # Phase 5: ./shell.nix       — zsh / 環境変数 / エイリアス
-    # Phase 5: ./programs.nix    — starship / zoxide / fzf / tmux / git ...
-    # Phase 5: ./files.nix       — xdg.configFile（nvim / yazi / sheldon ...）
+    ./shell.nix                # zsh / 環境変数 / エイリアス
+    ./programs.nix             # starship / zoxide / fzf / git
+    ./files.nix                # xdg.configFile（nvim / yazi / tmux / starship ...）
   ];
 
   home.username = "jpeguu";

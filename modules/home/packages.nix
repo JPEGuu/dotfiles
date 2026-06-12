@@ -49,6 +49,11 @@
     jdk            # jdk-openjdk
     php
 
+    # --- 設定ファイル主体のツール（設定は files.nix で参照）---
+    neovim
+    tmux
+    yazi
+
     # --- 開発: ユーティリティ ---
     gh             # github-cli
     jq
