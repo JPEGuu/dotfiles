@@ -16,7 +16,7 @@
     }
   },
   "ui": {
-    "theme": "GitHub"
+    "theme": "Default"
   },
   "hooks": {
     "BeforeTool": [
