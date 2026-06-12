@@ -66,11 +66,6 @@ if [ -f "$HOME/.config/zsh/functions.zsh" ]; then
     source "$HOME/.config/zsh/functions.zsh"
 fi
 
-# --- Distrobox Auto-Enter ---
-if [ -f "$HOME/.config/shell/distrobox.sh" ]; then
-    source "$HOME/.config/shell/distrobox.sh"
-fi
-
 # --- Sheldon (Plugin Manager) ---
 if command -v sheldon > /dev/null 2>&1; then
     eval "$(sheldon source)"

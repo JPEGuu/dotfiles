@@ -28,11 +28,6 @@ if [ -f "$HOME/.config/shell/aliases.sh" ]; then
     source "$HOME/.config/shell/aliases.sh"
 fi
 
-# --- Distrobox Auto-Enter ---
-if [ -f "$HOME/.config/shell/distrobox.sh" ]; then
-    source "$HOME/.config/shell/distrobox.sh"
-fi
-
 # --- Zoxide ---
 if command -v zoxide > /dev/null 2>&1; then
     eval "$(zoxide init bash)"
