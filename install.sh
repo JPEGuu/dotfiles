@@ -73,15 +73,41 @@ if [ -d "$DOTFILES_DIR/.config" ]; then
     done
 fi
 
-# Install packages from pkglist.txt
-if command -v pacman >/dev/null 2>&1 && [ -f "$DOTFILES_DIR/pkglist.txt" ]; then
+# Bootstrap yay if not present
+if command -v pacman >/dev/null 2>&1 && ! yay --version >/dev/null 2>&1; then
+    echo "📦 Bootstrapping yay (AUR helper)..."
+    sudo pacman -S --needed --noconfirm git base-devel
+    # Remove yay-bin and related packages if installed; they conflict with yay built from source
+    yay_bin_pkgs=$(pacman -Q 2>/dev/null | awk '/^yay-bin/{print $1}')
+    if [ -n "$yay_bin_pkgs" ]; then
+        echo "📦 Removing yay-bin packages (conflict with yay source build): $yay_bin_pkgs"
+        # shellcheck disable=SC2086
+        sudo pacman -R --noconfirm $yay_bin_pkgs
+    fi
+    git clone https://aur.archlinux.org/yay.git /tmp/yay-bootstrap
+    (cd /tmp/yay-bootstrap && makepkg -si --noconfirm)
+    rm -rf /tmp/yay-bootstrap
+    # Configure yay to be non-interactive for AUR packages
+    yay --save --answerclean All --answerdiff None --answeredit None --answerupgrade None
+fi
+
+# Install packages from pkglist.txt (yay handles both official repos and AUR)
+if command -v yay >/dev/null 2>&1 && [ -f "$DOTFILES_DIR/pkglist.txt" ]; then
     echo "📦 Installing packages from pkglist.txt..."
-    if sudo pacman -Syu --needed --noconfirm - < "$DOTFILES_DIR/pkglist.txt"; then
+    # Copy pkglist to a temp file to avoid stdin conflicts with yay's potential TTY needs
+    TMP_PKGLIST=$(mktemp)
+    grep -v '^#' "$DOTFILES_DIR/pkglist.txt" > "$TMP_PKGLIST"
+    
+    # In non-interactive environments, yay might still try to open /dev/tty for AUR packages.
+    # We use --noprogressbar and other flags to minimize output and potential interaction.
+    if yes | yay -Syu --needed --noconfirm --noprogressbar $(cat "$TMP_PKGLIST"); then
         echo "✅ Packages installed successfully."
     else
         echo "❌ ERROR: Failed to install packages." >&2
+        rm -f "$TMP_PKGLIST"
         exit 1
     fi
+    rm -f "$TMP_PKGLIST"
 fi
 
 # Ensure nvm is installed and loaded
@@ -89,7 +115,7 @@ export NVM_DIR="$HOME/.config/nvm"
 if [ ! -d "$NVM_DIR" ]; then
     echo "📦 Installing nvm..."
     mkdir -p "$NVM_DIR"
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash < /dev/null
 fi
 
 # Load nvm
@@ -171,6 +197,12 @@ setup_symlink "$DOTFILES_DIR/gemini/settings.json" "$HOME/.gemini/settings.json"
 if command -v rtk >/dev/null 2>&1; then
     echo "🔧 Initializing rtk hook for Gemini CLI..."
     rtk init -g --gemini
+fi
+
+# Initialize Antigravity CLI shell environment
+if command -v agy >/dev/null 2>&1; then
+    echo "🔧 Initializing Antigravity CLI shell environment..."
+    agy install
 fi
 
 echo "✅ Installation complete! Please restart your shell."
