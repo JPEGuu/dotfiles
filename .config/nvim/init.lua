@@ -24,9 +24,14 @@ now(function()
     vim.g.mapleader = " "
     vim.g.maplocalleader = " "
 
-    -- Visual Options (Must be set before theme)
-    vim.opt.termguicolors = true
-    vim.opt.background = "dark"
+    -- Enable build-in packages
+    vim.cmd.packadd("nvim.undotree")
+    vim.opt.undofile = true
+    vim.opt.undodir = vim.fn.stdpath("data") .. "/undodir"
+    for _, value in ipairs(vim.opt.undodir:get()) do
+        vim.fn.mkdir(value, "p")
+    end
+    vim.keymap.set('n', '<Leader>u', ':Undotree<CR>', { desc = 'Open Undo Tree' })
 
     -- Neovim 0.11 Filetype Registry (Fixes checkhealth warnings)
     vim.filetype.add({
@@ -48,15 +53,38 @@ now(function()
         pattern = { "*" },
     })
 
-    -- Theme: Catppuccin Mocha via Mini.base16
-    require('mini.base16').setup({
-        palette = {
-            base00 = '#1e1e2e', base01 = '#181825', base02 = '#313244', base03 = '#45475a',
-            base04 = '#585b70', base05 = '#cdd6f4', base06 = '#f5e0dc', base07 = '#b4befe',
-            base08 = '#f38ba8', base09 = '#fab387', base0A = '#f9e2af', base0B = '#a6e3a1',
-            base0C = '#94e2d5', base0D = '#89b4fa', base0E = '#cba6f7', base0F = '#f2cdcd',
-        }
+    -- Visual Options (Must be set before theme)
+    vim.opt.termguicolors = true
+    vim.opt.background = "dark"
+    vim.opt.winblend = 0
+    vim.opt.pumblend = 0
+
+    add('rebelot/kanagawa.nvim')
+    require('kanagawa').setup({
+        compile = false,             -- enable compiling the colorscheme
+        undercurl = true,            -- enable undercurls
+        commentStyle = { italic = true },
+        functionStyle = {},
+        keywordStyle = { italic = true},
+        statementStyle = { bold = true },
+        typeStyle = {},
+        transparent = true,         -- do not set background color
+        dimInactive = true,         -- dim inactive window `:h hl-NormalNC`
+        terminalColors = true,       -- define vim.g.terminal_color_{0,17}
+        colors = {                   -- add/modify theme and palette colors
+            palette = {},
+            theme = { wave = {}, lotus = {}, dragon = {}, all = {} },
+        },
+        overrides = function(colors) -- add/modify highlights
+            return {}
+        end,
+        theme = "dragon",              -- Load "wave" theme
+        background = {               -- map the value of 'background' option to a theme
+            dark = "dragon",           -- try "dragon" !
+            light = "lotus"
+        },
     })
+    vim.cmd("colorscheme kanagawa")
 
     -- Mini.basics: Sensible defaults
     require('mini.basics').setup({
@@ -70,6 +98,9 @@ now(function()
 
     -- Disable swap files
     vim.opt.swapfile = false
+
+    -- Disable backup files
+    vim.opt.backup = false
 
     -- Disable editorconfig
     vim.g.editorconfig = false
@@ -106,32 +137,16 @@ now(function()
         hooks = { post_checkout = function() vim.cmd('TSUpdate') end },
     })
     -- Possible to immediately execute code which depends on the added plugin
-    local ts_install_dir = vim.fs.normalize(vim.fn.stdpath('data') .. '/site')
     require('nvim-treesitter').setup({
-         install_dir = ts_install_dir
+         install_dir = vim.fn.stdpath('data') .. '/site'
     })
-    require('nvim-treesitter').install({
-        "lua",
-        "vim",
-        "vimdoc",
-        "markdown",
-        "bash",
-        "javascript",
-        "typescript",
-        "php",
-        "go",
-        "rust",
-        "clojure",
-        "commonlisp"
-    }):wait(300000)
+    require('nvim-treesitter').install({ "lua", "vim", "vimdoc", "markdown", "bash", "javascript", "typescript", "php", "go", "rust", "clojure" }):wait(300000)
 
     -- Conjure Configuration (Set before plugin loads)
     vim.g["conjure#mapping#prefix"] = ","
     vim.g["conjure#log#hud#enabled"] = true
-    vim.g["conjure#client_on_load"] = false
+    vim.g["conjure#client_on_load"] = false -- Re-enable auto-start now that Treesitter is working
     vim.g["conjure#mapping#doc_word"] = false -- Disable 'K' mapping to avoid errors in PHP and prioritize LSP hover
-
-    vim.g["conjure#filetypes"] = { "javascript", "php", "clojure", "lisp" }
 
     -- Changelog / Memo Configuration (Ref: https://homaju.hatenablog.com/entry/2022/06/16/080957)
     -- Automatically set user name from git config
@@ -176,15 +191,7 @@ later(function()
     require("mini.files").setup({
         content = {
             prefix = function(entry)
-                local fs_type = entry.fs_type
-                local name = entry.name
-                if type(fs_type) ~= 'string' or type(name) ~= 'string' then
-                    return ' ', 'MiniIconsGrey'
-                end
-                if fs_type ~= 'file' and fs_type ~= 'directory' then
-                    fs_type = 'file'
-                end
-                local icon, hl = MiniIcons.get(fs_type, name)
+                local icon, hl = MiniIcons.get(entry.fs_type, entry.name)
                 local stat = vim.loop.fs_lstat(entry.path)
                 if stat and stat.type == 'link' then
                     icon, hl = '', 'MiniIconsCyan'
@@ -461,8 +468,9 @@ later(function()
     end)
 end)
 
--- Neogit & Diffview (Git Interface)
+-- Git Interface
 later(function()
+    -- NeoGit
     add({ source = 'nvim-lua/plenary.nvim' })
     add({ source = 'sindrets/diffview.nvim' })
     add({ source = 'NeogitOrg/neogit' })
@@ -470,10 +478,15 @@ later(function()
     safecall("neogit", function(neogit)
         neogit.setup({
             disable_commit_confirmation = true,
+            disable_context_highlighting= false,
             integrations = {
                 diffview = true,
             },
         })
+
+        -- Color
+        vim.api.nvim_set_hl(0, "NeogitNormal", { bg = "#1f1f28", fg = "#dcd7ba" })
+        vim.api.nvim_set_hl(0, "NeogitDiffContextHighlight", { bg = "#2a2a37" })
 
         -- Keymaps
         vim.keymap.set("n", "<Leader>gg", neogit.open, { desc = "Neogit Status" })
@@ -489,10 +502,8 @@ later(function()
     vim.keymap.set("i", "<C-j>", "<Plug>(skkeleton-toggle)")
     vim.keymap.set("c", "<C-j>", "<Plug>(skkeleton-toggle)")
 
-    -- Floating window input for Terminal mode
-    local skk_term_input_active = false
+    -- Command-line input for Terminal mode
     local function skk_term_input()
-        if skk_term_input_active then return end
         local term_job_id = vim.b.terminal_job_id
         if not term_job_id then
             vim.notify("No terminal job found in this buffer.", vim.log.levels.WARN)
@@ -500,87 +511,26 @@ later(function()
         end
 
         local job_id = term_job_id
-        local term_win = vim.api.nvim_get_current_win()
-        skk_term_input_active = true
 
+        -- Use schedule to trigger input() after leaving terminal mode context
         vim.schedule(function()
-            local width = vim.o.columns - 2
-            local buf = vim.api.nvim_create_buf(false, true)
-            local win = vim.api.nvim_open_win(buf, true, {
-                relative = 'editor',
-                row = vim.o.lines - 4,
-                col = 1,
-                width = width,
-                height = 1,
-                style = 'minimal',
-                border = 'rounded',
-                title = ' SKK ',
-                title_pos = 'center',
-            })
-            vim.api.nvim_set_option_value('buftype', 'nofile', { buf = buf })
+            -- Trigger SKK enable for the upcoming input() prompt
+            -- Using <Plug>(skkeleton-enable) instead of <C-j> to ensure it's ON even if it wasn't cleared.
+            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Plug>(skkeleton-enable)", true, false, true), 'm', false)
 
-            local function close_and_return()
-                pcall(vim.fn['skkeleton#disable'])
-                if vim.api.nvim_win_is_valid(win) then
-                    vim.api.nvim_win_close(win, true)
-                end
-                if vim.api.nvim_buf_is_valid(buf) then
-                    vim.api.nvim_buf_delete(buf, { force = true })
-                end
-                skk_term_input_active = false
-                if vim.api.nvim_win_is_valid(term_win) then
-                    vim.api.nvim_set_current_win(term_win)
-                end
-                vim.cmd('startinsert')
+            local ok, result = pcall(vim.fn.input, "SKK: ")
+
+            -- Ensure Skkeleton is disabled after input() returns
+            -- This fixes the issue where the state is not cleared when returning to terminal mode.
+            pcall(vim.fn["skkeleton#disable"])
+
+            if ok and result and result ~= "" then
+                -- Send the string to the terminal job without a newline
+                vim.api.nvim_chan_send(job_id, result)
             end
 
-            -- Detect <CR> outside of henkan: a newline in the buffer means submit
-            vim.api.nvim_create_autocmd('TextChangedI', {
-                buffer = buf,
-                callback = function()
-                    if not vim.api.nvim_buf_is_valid(buf) then return end
-                    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-                    if #lines > 1 then
-                        local result = table.concat(lines, '')
-                        vim.schedule(function()
-                            close_and_return()
-                            if result ~= '' then
-                                vim.api.nvim_chan_send(job_id, result)
-                            end
-                        end)
-                    end
-                end,
-            })
-
-            -- Auto-close after 1.5s when focus leaves the floating window
-            vim.api.nvim_create_autocmd('WinLeave', {
-                buffer = buf,
-                once = true,
-                callback = function()
-                    vim.defer_fn(function()
-                        if vim.api.nvim_win_is_valid(win) then
-                            close_and_return()
-                        end
-                    end, 1500)
-                end,
-            })
-
-            -- Safety net: reset flag if window is closed externally
-            vim.api.nvim_create_autocmd('WinClosed', {
-                pattern = tostring(win),
-                once = true,
-                callback = function()
-                    skk_term_input_active = false
-                end,
-            })
-
-            vim.keymap.set('n', '<Esc>', close_and_return, { buffer = buf, nowait = true })
-
-            vim.wo[win].cursorline = true
-            -- Feed 'i' (enter insert mode) then skkeleton-enable as a single typeahead sequence
-            vim.api.nvim_feedkeys(
-                'i' .. vim.api.nvim_replace_termcodes('<Plug>(skkeleton-enable)', true, false, true),
-                'n', false)
+            -- Restart terminal insert mode
+            vim.cmd('startinsert')
         end)
     end
 
@@ -619,14 +569,18 @@ later(function()
             }
             local hl = mode_map[mode]
             if hl then
+                -- For normal windows
                 vim.opt_local.cursorline = true
                 vim.opt_local.winhighlight = "CursorLine:" .. hl
+                -- For command line
                 if vim.fn.getcmdtype() ~= "" then
                     vim.api.nvim_set_hl(0, "MsgArea", { link = hl })
+                    vim.cmd('redraw')
                 end
             else
                 vim.opt_local.winhighlight = ""
                 vim.api.nvim_set_hl(0, "MsgArea", { link = "Normal" })
+                vim.cmd('redraw')
             end
         end,
     })
