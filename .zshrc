@@ -90,6 +90,3 @@ if command -v zoxide > /dev/null 2>&1; then
     eval "$(zoxide init zsh)"
 fi
 
-
-# Added by Antigravity CLI installer
-export PATH="/home/jpeguu/.local/bin:$PATH"

@@ -199,10 +199,4 @@ if command -v rtk >/dev/null 2>&1; then
     rtk init -g --gemini
 fi
 
-# Initialize Antigravity CLI shell environment
-if command -v agy >/dev/null 2>&1; then
-    echo "🔧 Initializing Antigravity CLI shell environment..."
-    agy install
-fi
-
 echo "✅ Installation complete! Please restart your shell."

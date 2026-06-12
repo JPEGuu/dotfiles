@@ -23,7 +23,6 @@ RUN [ -L "$HOME/.config/nvim" ] && [ "$(readlink "$HOME/.config/nvim")" = "/home
 
 # 検証: ツール
 RUN command -v yay >/dev/null
-RUN export PATH="$HOME/.local/bin:$PATH" && command -v agy >/dev/null
 RUN export PATH="$HOME/.cargo/bin:$PATH" && command -v rtk >/dev/null
 
 # 検証: 主要なパッケージが pacman/yay でインストールされているか

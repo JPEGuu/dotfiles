@@ -1,5 +1,4 @@
 7zip
-antigravity-cli
 base
 base-devel
 bash-completion

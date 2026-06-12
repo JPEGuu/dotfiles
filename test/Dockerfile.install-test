@@ -19,15 +19,3 @@ RUN git clone https://aur.archlinux.org/yay.git /tmp/yay-bootstrap && \
     yay --version && \
     echo "PASS: yay bootstrap"
 
-# Test 2: antigravity-cli is listed in pkglist.txt
-RUN grep -q 'antigravity-cli' /home/testuser/pkglist.txt && \
-    echo "PASS: antigravity-cli in pkglist.txt"
-
-# Test 3: yay can install antigravity-cli from AUR
-RUN yay -S --needed --noconfirm antigravity-cli && \
-    (command -v agy || command -v antigravity) && \
-    echo "PASS: antigravity-cli installed"
-
-# Test 4: agy install configures shell environment
-RUN agy install && \
-    echo "PASS: agy install succeeded"
