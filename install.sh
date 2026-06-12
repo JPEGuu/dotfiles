@@ -188,15 +188,4 @@ if command -v rtk >/dev/null 2>&1; then
     rtk init -g --claude-md
 fi
 
-# Link Gemini CLI global config
-setup_symlink "$DOTFILES_DIR/gemini/GEMINI.md" "$HOME/.gemini/GEMINI.md"
-setup_symlink "$DOTFILES_DIR/gemini/skills" "$HOME/.gemini/skills"
-setup_symlink "$DOTFILES_DIR/gemini/settings.json" "$HOME/.gemini/settings.json"
-
-# Initialize rtk hook for Gemini CLI
-if command -v rtk >/dev/null 2>&1; then
-    echo "🔧 Initializing rtk hook for Gemini CLI..."
-    rtk init -g --gemini
-fi
-
 echo "✅ Installation complete! Please restart your shell."
