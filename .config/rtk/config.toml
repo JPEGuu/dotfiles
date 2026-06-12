@@ -29,10 +29,13 @@ max_files = 20
 max_file_size = 1048576
 
 [telemetry]
-enabled = false
+enabled = true
+consent_given = true
+consent_date = "2026-05-30T03:28:15.247873906+00:00"
 
 [hooks]
 exclude_commands = []
+transparent_prefixes = []
 
 [limits]
 grep_max_results = 200
