@@ -48,6 +48,7 @@
     clojure
     jdk            # jdk-openjdk
     php
+    php.packages.composer  # composer（旧 composer-global は廃止）
 
     # --- 設定ファイル主体のツール（設定は files.nix で参照）---
     neovim
