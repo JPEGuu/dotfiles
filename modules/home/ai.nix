@@ -7,15 +7,15 @@
 #   可変 symlink にする。
 { config, pkgs, lib, ... }:
 
-let
-  rtk = pkgs.callPackage ../../pkgs/rtk.nix { };
-in
+# let
+#   rtk = pkgs.callPackage ../../pkgs/rtk.nix { };
+# in
 {
   home.packages = [
     pkgs.claude-code
     pkgs.codex
     pkgs.nodejs_22 # 開発・npm 実行用ランタイム（旧 nvm 廃止の代替）
-    rtk
+    # rtk
   ];
 
   # --- Claude Code グローバル設定 ---
@@ -34,9 +34,10 @@ in
 
   # --- rtk の Claude Code 連携フック初期化 ---
   # activation 時に実行（home.packages の rtk が PATH に入った後）。
-  home.activation.rtkInit = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    if command -v rtk >/dev/null 2>&1; then
-      $DRY_RUN_CMD rtk init -g --claude-md || true
-    fi
-  '';
+  # (RTK が無効化されているため、現在はコメントアウト)
+  # home.activation.rtkInit = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+  #   if command -v rtk >/dev/null 2>&1; then
+  #     $DRY_RUN_CMD rtk init -g --claude-md || true
+  #   fi
+  # '';
 }

@@ -9,18 +9,18 @@
 #   再現性のため rev は将来固定タグ/コミットへ変更するのが望ましい。
 { lib, rustPlatform, fetchFromGitHub, openssl, pkg-config }:
 
-rustPlatform.buildRustPackage {
+rustPlatform.buildRustPackage rec {
   pname = "rtk";
-  version = "unstable";
+  version = "0.9.135";
 
   src = fetchFromGitHub {
     owner = "rtk-ai";
     repo = "rtk";
-    rev = "main"; # TODO: 固定タグ/コミットに置き換える
-    hash = lib.fakeHash; # TODO: 初回ビルドで提示される実ハッシュに置換
+    rev = "v${version}";
+    hash = lib.fakeHash; # コンテナ取得値に置換予定
   };
 
-  cargoHash = lib.fakeHash; # TODO: 初回ビルドで提示される実ハッシュに置換
+  cargoHash = lib.fakeHash; # コンテナ取得値に置換予定
 
   # OpenSSL 等に依存する場合の一般的なビルド入力（不要ならビルドエラーで判明する）
   nativeBuildInputs = [ pkg-config ];
