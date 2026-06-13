@@ -56,6 +56,8 @@
     yazi
 
     # --- 開発: ユーティリティ ---
+    gcc            # Cコンパイラ (Neovim Treesitter parserのビルド等に必須)
+    gnumake        # Make (ビルドツール)
     gh             # github-cli
     jq
     tree-sitter    # tree-sitter-cli
