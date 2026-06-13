@@ -25,8 +25,5 @@
 
     # Clojure（deps.edn / tools）
     "clojure".source = ../../.config/clojure;
-
-    # rtk（Rust Token Killer）設定
-    "rtk".source = ../../.config/rtk;
   };
 }

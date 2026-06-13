@@ -1,4 +1,0 @@
-@openai/codex
-corepack
-npm
-@anthropic-ai/claude-code

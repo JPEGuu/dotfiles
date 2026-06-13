@@ -8,7 +8,7 @@
     ./shell.nix                # zsh / 環境変数 / エイリアス
     ./programs.nix             # starship / zoxide / fzf / git
     ./files.nix                # xdg.configFile（nvim / yazi / tmux / starship ...）
-    ./ai.nix                   # claude-code / codex / rtk + Claude 設定
+    ./ai.nix                   # claude-code / codex + Claude 設定
   ];
 
   home.username = "jpeguu";
