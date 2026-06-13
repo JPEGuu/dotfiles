@@ -7,6 +7,11 @@
     experimental-features = [ "nix-command" "flakes" ];
     auto-optimise-store = true;
   };
+
+  # unfree パッケージを許可（claude-code 等が unfree のため必須）。
+  # 全許可ではなく特定のみ許可したい場合は allowUnfreePredicate を使う。
+  nixpkgs.config.allowUnfree = true;
+
   # 古い世代を自動 GC
   nix.gc = {
     automatic = true;
