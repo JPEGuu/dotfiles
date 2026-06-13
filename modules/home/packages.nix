@@ -21,7 +21,7 @@
     fd
     tree
     less
-    poppler_utils  # poppler (pdftotext 等)
+    poppler-utils  # pdftotext / pdftoppm 等（Yazi の PDF プレビュー用。旧 pkglist: poppler）
 
     # --- システム監視・情報 ---
     bottom         # btm
