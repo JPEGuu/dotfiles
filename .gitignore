@@ -1,0 +1,10 @@
+.env
+.zshrc.local
+
+# Nix build outputs
+/result
+/result-*
+
+# AI assistant runtime state / private local overrides
+.claude/
+.codex/

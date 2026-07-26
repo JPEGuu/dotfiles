@@ -1,0 +1,271 @@
+// ~/.config/niri/config.kdl
+// KDL format: https://kdl.dev
+// "/-" comments out the following node.
+// Full reference: https://niri-wm.github.io/niri/
+// Targets niri 25.08+ syntax (verified against the upstream default-config.kdl
+// on the niri-wm/niri "main" branch, mid-2026).
+//
+// 編集後は `niri validate` で構文確認できる。
+
+// ---------------------------------------------------------------------------
+// Input
+// https://niri-wm.github.io/niri/Configuration:-Input
+// ---------------------------------------------------------------------------
+input {
+    keyboard {
+        xkb {
+            layout "us"
+            // options "grp:win_space_toggle,compose:ralt,ctrl:nocaps"
+        }
+        // Enable numlock on startup. Omit to leave it off.
+        numlock
+    }
+
+    touchpad {
+        tap
+        natural-scroll
+        // dwt
+        // accel-speed 0.2
+        // scroll-method "two-finger"
+    }
+
+    mouse {
+        // natural-scroll
+        // accel-speed 0.2
+    }
+
+    // Focus windows/outputs when the mouse enters them.
+    // focus-follows-mouse max-scroll-amount="0%"
+}
+
+// ---------------------------------------------------------------------------
+// Environment variables exported to spawned processes.
+// https://niri-wm.github.io/niri/Configuration:-Miscellaneous
+// NOTE: Do NOT set DISPLAY here on niri 25.08+ — niri exports $DISPLAY itself
+// for its built-in Xwayland integration (see the xwayland-satellite block
+// below). Setting it manually breaks that. Kept here, commented, only as a
+// reference for older niri versions.
+// ---------------------------------------------------------------------------
+environment {
+    // DISPLAY ":0"
+    // QT_QPA_PLATFORM "wayland"
+    // NIXOS_OZONE_WL "1"
+}
+
+// ---------------------------------------------------------------------------
+// Xwayland integration (niri >= 25.08).
+// With xwayland-satellite >= 0.7 installed and on $PATH, niri creates the X11
+// sockets, exports $DISPLAY, and spawns xwayland-satellite on demand — no
+// spawn-at-startup needed. Uncomment "off" to disable, or set a custom binary
+// path. The legacy manual spawn line is commented out just below.
+// ---------------------------------------------------------------------------
+xwayland-satellite {
+    // off
+    path "xwayland-satellite"
+}
+
+// ---------------------------------------------------------------------------
+// Startup programs.
+// https://niri-wm.github.io/niri/Configuration:-Miscellaneous
+// ---------------------------------------------------------------------------
+spawn-at-startup "noctalia-shell"
+
+// Legacy manual Xwayland start — NOT needed on niri 25.08+ (handled above).
+// Only uncomment on older niri, and also set DISPLAY in the environment block.
+// spawn-at-startup "xwayland-satellite"
+
+// ---------------------------------------------------------------------------
+// Misc
+// ---------------------------------------------------------------------------
+// Ask clients to drop their client-side decorations when possible.
+prefer-no-csd
+
+// Where screenshots are saved (strftime(3) formatted; ~ expands to $HOME).
+screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
+
+hotkey-overlay {
+    // skip-at-startup
+}
+
+// Allows notification actions and window activation from Noctalia.
+debug {
+    honor-xdg-activation-with-invalid-serial
+}
+
+// ---------------------------------------------------------------------------
+// Layout
+// https://niri-wm.github.io/niri/Configuration:-Layout
+// ---------------------------------------------------------------------------
+layout {
+    gaps 16
+    center-focused-column "never"
+    background-color "transparent"
+
+    preset-column-widths {
+        proportion 0.33333
+        proportion 0.5
+        proportion 0.66667
+    }
+
+    default-column-width { proportion 0.5; }
+
+    focus-ring {
+        width 4
+        active-color "#7fc8ff"
+        inactive-color "#505050"
+    }
+
+    border {
+        off
+        width 4
+        active-color "#ffc87f"
+        inactive-color "#505050"
+        urgent-color "#9b0000"
+    }
+}
+
+overview {
+    workspace-shadow {
+        off
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Window rules (examples — both commented out).
+// https://niri-wm.github.io/niri/Configuration:-Window-Rules
+// ---------------------------------------------------------------------------
+// Open Firefox picture-in-picture floating:
+/-window-rule {
+    match app-id=r#"firefox$"# title="^Picture-in-Picture$"
+    open-floating true
+}
+
+// Round the corners of every window:
+/-window-rule {
+    geometry-corner-radius 12
+    clip-to-geometry true
+}
+
+// Noctalia wallpaper layer: stationary wallpaper on the backdrop.
+layer-rule {
+    match namespace="^noctalia-wallpaper*"
+    place-within-backdrop true
+}
+
+// ---------------------------------------------------------------------------
+// Keybindings. Mod = Super on a TTY (Alt under a nested winit window).
+// niri has no option to remap "Mod"; binds that must be Super use "Super+".
+// https://niri-wm.github.io/niri/Configuration:-Key-Bindings
+// ---------------------------------------------------------------------------
+binds {
+    // Show the important-hotkeys overlay.
+    Mod+Shift+Slash { show-hotkey-overlay; }
+
+    // Programs.
+    Mod+Return hotkey-overlay-title="Open a Terminal: wezterm" { spawn "wezterm"; }
+    Mod+D      hotkey-overlay-title="Run an Application: noctalia" { spawn "noctalia-shell" "ipc" "call" "launcher" "toggle"; }
+    Mod+S      hotkey-overlay-title="Open Control Center: noctalia" { spawn "noctalia-shell" "ipc" "call" "controlCenter" "toggle"; }
+    Mod+Alt+L  hotkey-overlay-title="Lock Screen: noctalia" { spawn "noctalia-shell" "ipc" "call" "lockScreen" "lock"; }
+
+    // Window / column management.
+    Mod+Q repeat=false { close-window; }
+    Mod+F { maximize-column; }
+    Mod+Shift+F { fullscreen-window; }
+    Mod+M { maximize-window-to-edges; }
+    Mod+C { center-column; }
+    Mod+R { switch-preset-column-width; }
+    Mod+Shift+R { switch-preset-column-width-back; }
+    Mod+Minus { set-column-width "-10%"; }
+    Mod+Equal { set-column-width "+10%"; }
+    Mod+V { toggle-window-floating; }
+    Mod+W { toggle-column-tabbed-display; }
+    Mod+O repeat=false { toggle-overview; }
+
+    // Focus.
+    Mod+Left  { focus-column-left; }
+    Mod+Down  { focus-window-down; }
+    Mod+Up    { focus-window-up; }
+    Mod+Right { focus-column-right; }
+    Mod+H     { focus-column-left; }
+    Mod+J     { focus-window-down; }
+    Mod+K     { focus-window-up; }
+    Mod+L     { focus-column-right; }
+
+    // Move.
+    Mod+Ctrl+Left  { move-column-left; }
+    Mod+Ctrl+Down  { move-window-down; }
+    Mod+Ctrl+Up    { move-window-up; }
+    Mod+Ctrl+Right { move-column-right; }
+    Mod+Ctrl+H     { move-column-left; }
+    Mod+Ctrl+J     { move-window-down; }
+    Mod+Ctrl+K     { move-window-up; }
+    Mod+Ctrl+L     { move-column-right; }
+
+    // Move to first / last column.
+    Mod+Home { focus-column-first; }
+    Mod+End  { focus-column-last; }
+    Mod+Ctrl+Home { move-column-to-first; }
+    Mod+Ctrl+End  { move-column-to-last; }
+
+    // Monitors.
+    Mod+Shift+Left  { focus-monitor-left; }
+    Mod+Shift+Down  { focus-monitor-down; }
+    Mod+Shift+Up    { focus-monitor-up; }
+    Mod+Shift+Right { focus-monitor-right; }
+    Mod+Shift+Ctrl+Left  { move-column-to-monitor-left; }
+    Mod+Shift+Ctrl+Right { move-column-to-monitor-right; }
+
+    // Workspaces.
+    Mod+Page_Down      { focus-workspace-down; }
+    Mod+Page_Up        { focus-workspace-up; }
+    Mod+U              { focus-workspace-down; }
+    Mod+I              { focus-workspace-up; }
+    Mod+Ctrl+Page_Down { move-column-to-workspace-down; }
+    Mod+Ctrl+Page_Up   { move-column-to-workspace-up; }
+
+    Mod+1 { focus-workspace 1; }
+    Mod+2 { focus-workspace 2; }
+    Mod+3 { focus-workspace 3; }
+    Mod+4 { focus-workspace 4; }
+    Mod+5 { focus-workspace 5; }
+    Mod+6 { focus-workspace 6; }
+    Mod+7 { focus-workspace 7; }
+    Mod+8 { focus-workspace 8; }
+    Mod+9 { focus-workspace 9; }
+    Mod+Ctrl+1 { move-column-to-workspace 1; }
+    Mod+Ctrl+2 { move-column-to-workspace 2; }
+    Mod+Ctrl+3 { move-column-to-workspace 3; }
+    Mod+Ctrl+4 { move-column-to-workspace 4; }
+    Mod+Ctrl+5 { move-column-to-workspace 5; }
+    Mod+Ctrl+6 { move-column-to-workspace 6; }
+    Mod+Ctrl+7 { move-column-to-workspace 7; }
+    Mod+Ctrl+8 { move-column-to-workspace 8; }
+    Mod+Ctrl+9 { move-column-to-workspace 9; }
+
+    // Column composition.
+    Mod+BracketLeft  { consume-or-expel-window-left; }
+    Mod+BracketRight { consume-or-expel-window-right; }
+    Mod+Comma  { consume-window-into-column; }
+    Mod+Period { expel-window-from-column; }
+
+    // Screenshots.
+    // Print           -> interactive area/region selector
+    // Mod+Print       -> whole screen (this output)
+    // Mod+Shift+Print -> the focused window
+    Print           { screenshot; }
+    Mod+Print       { screenshot-screen; }
+    Mod+Shift+Print { screenshot-window; }
+
+    // Volume and brightness through Noctalia IPC, so OSD stays in sync.
+    XF86AudioRaiseVolume  allow-when-locked=true { spawn "noctalia-shell" "ipc" "call" "volume" "increase"; }
+    XF86AudioLowerVolume  allow-when-locked=true { spawn "noctalia-shell" "ipc" "call" "volume" "decrease"; }
+    XF86AudioMute         allow-when-locked=true { spawn "noctalia-shell" "ipc" "call" "volume" "muteOutput"; }
+    XF86AudioMicMute      allow-when-locked=true { spawn "noctalia-shell" "ipc" "call" "volume" "muteInput"; }
+    XF86MonBrightnessUp   allow-when-locked=true { spawn "noctalia-shell" "ipc" "call" "brightness" "increase"; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn "noctalia-shell" "ipc" "call" "brightness" "decrease"; }
+
+    // Session.
+    Mod+Shift+E { quit; }
+    Ctrl+Alt+Delete { quit; }
+    Mod+Shift+P { power-off-monitors; }
+}
