@@ -28,7 +28,7 @@
     enable = true;
     # コミット著者情報。メール実アドレスを晒さないため GitHub の noreply を使う。
     # 形式: <numeric-id>+<login>@users.noreply.github.com（gh api user で確認）。
-    userName = "JPEGuu";
-    userEmail = "102569155+JPEGuu@users.noreply.github.com";
+    settings.user.name = "JPEGuu";
+    settings.user.email = "102569155+JPEGuu@users.noreply.github.com";
   };
 }
