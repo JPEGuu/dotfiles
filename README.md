@@ -38,28 +38,81 @@ dotfiles/
 
 ## セットアップ
 
+**まず `config.nix` を自分の情報に書き換える。** ここで定義した値がユーザー名・ホーム
+ディレクトリ・git identity として flake 全体（`home/` / `nixos/` / `hosts/wsl`）へ反映される。
+
+### 個人設定（config.nix）
+
+`config.nix` は個人依存の値を集約した単一ソース。以下を自分用に編集する。
+
+```nix
+{
+  username      = "your-name";        # ログインユーザー名（system user / home-manager / wsl.defaultUser 共通）
+  homeDirectory = "/home/your-name";  # username に合わせる（/home/<username>）
+  description   = "your-name";        # ユーザーの表示名（任意）
+
+  git = {
+    name  = "Your Name";              # git のコミット著者名
+    email = "you@example.com";        # git のコミット著者メール（GitHub の noreply 推奨）
+  };
+}
+```
+
+- `username` を変えたら `homeDirectory` も `/home/<username>` に合わせる。
+- 最終的に dotfiles は自分の `homeDirectory` 配下（既定 `~/dotfiles`）へ置く
+  （`home/ai` と `home/nvim` の symlink が `~/dotfiles/...` の絶対パス前提のため）。
+- git メールは実アドレスを晒したくない場合、GitHub の noreply
+  （`<numeric-id>+<login>@users.noreply.github.com`）を使う。
+
 ### WSL（NixOS-WSL）
 
+初回は自分のユーザーがまだ無く、NixOS-WSL の既定ユーザー（通常 `nixos`）で起動するため、
+2 段階で構築する。
+
 ```bash
-# 1. リポジトリを clone
+# --- 初回のみ ---
+# 1. 既定ユーザーで clone（この時点では初期ユーザーの home 配下でよい）
 git clone https://github.com/JPEGuu/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 
-# 2. ビルド & 切り替え
+# 2. config.nix を自分の情報に編集
+$EDITOR config.nix
+
+# 3. rebuild で自分のユーザーと /home/<username> を生成
+sudo nixos-rebuild switch --flake .#wsl
+
+# 4. WSL を終了して入り直し、自分のユーザーでログインする
+#    （Windows 側 PowerShell 例: wsl -t NixOS  →  wsl -d NixOS）
+
+# 5. 編集済みの dotfiles を自分の home 配下へ移し、所有権を移す
+#    （初期ユーザー名が nixos 以外なら読み替える）
+sudo mv /home/nixos/dotfiles ~/dotfiles
+sudo chown -R "$USER:$(id -gn)" ~/dotfiles
+cd ~/dotfiles
+
+# 6. 自分のユーザーで再反映
 sudo nixos-rebuild switch --flake .#wsl
 ```
 
+2 回目以降は `config.nix` は編集済みのため、下記「設定の更新」の `nrs-wsl` を使う。
+
 ### bare-metal（実機）
 
+NixOS インストール時に自分のユーザーを作成し、そのユーザーでログインできる状態から始める
+（`config.nix` の `username` はそのユーザー名に合わせる）。
+
 ```bash
-# 1. リポジトリを clone
+# 1. 自分の home に clone
 git clone https://github.com/JPEGuu/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 
-# 2. hardware-configuration.nix を実機の出力で置き換える
+# 2. config.nix を自分の情報に編集（username はログインユーザーと一致させる）
+$EDITOR config.nix
+
+# 3. hardware-configuration.nix を実機の出力で置き換える
 sudo nixos-generate-config --show-hardware-config > hosts/desktop/hardware-configuration.nix
 
-# 3. ビルド & 切り替え
+# 4. ビルド & 切り替え
 sudo nixos-rebuild switch --flake .#desktop
 ```
 
