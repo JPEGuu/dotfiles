@@ -1,5 +1,5 @@
 # 両環境（WSL / bare-metal）で共通のシステムレベル設定
-{ pkgs, ... }:
+{ pkgs, userConfig, ... }:
 
 {
   # --- Nix 本体の設定 ---
@@ -30,9 +30,9 @@
   i18n.defaultLocale = "en_US.UTF-8";
 
   # --- ユーザー定義 ---
-  users.users.jpeguu = {
+  users.users.${userConfig.username} = {
     isNormalUser = true;
-    description = "jpeguu";
+    description = userConfig.description;
     extraGroups = [ "wheel" "docker" ];
     shell = pkgs.zsh;
   };

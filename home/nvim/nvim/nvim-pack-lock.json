@@ -1,0 +1,54 @@
+{
+  "plugins": {
+    "conjure": {
+      "rev": "b7ff6c52b84a555cb57ea0d37b005473d4726a81",
+      "src": "https://github.com/Olical/conjure"
+    },
+    "denops.vim": {
+      "rev": "e82c5a94ca1154b05c9d74d6f6f58c9991b1424f",
+      "src": "https://github.com/vim-denops/denops.vim"
+    },
+    "diffview.nvim": {
+      "rev": "4516612fe98ff56ae0415a259ff6361a89419b0a",
+      "src": "https://github.com/sindrets/diffview.nvim"
+    },
+    "kanagawa.nvim": {
+      "rev": "bb85e4bfc8d89b0e62c8fa53ccdd13d12e2f77b3",
+      "src": "https://github.com/rebelot/kanagawa.nvim"
+    },
+    "mason-lspconfig.nvim": {
+      "rev": "7adc933dabcc7c86ae6b07aff7ee68eac398491f",
+      "src": "https://github.com/williamboman/mason-lspconfig.nvim"
+    },
+    "mason.nvim": {
+      "rev": "2a6940af80375532e5e9e7c1f2fc6319a1b7a69d",
+      "src": "https://github.com/williamboman/mason.nvim"
+    },
+    "mini.nvim": {
+      "rev": "1345d191bb3da9c7b0e977f4387c5761f9bff68d",
+      "src": "https://github.com/nvim-mini/mini.nvim",
+      "version": "'stable'"
+    },
+    "neogit": {
+      "rev": "57c9f8ee784bcd07141bf7fa958b5c5bb1420de8",
+      "src": "https://github.com/NeogitOrg/neogit"
+    },
+    "nvim-lspconfig": {
+      "rev": "7ab79bb1b57160a537f427ac8a6026102f12b701",
+      "src": "https://github.com/neovim/nvim-lspconfig"
+    },
+    "nvim-treesitter": {
+      "rev": "61df84986b4b4ec469ee745a182e433d49f8c27e",
+      "src": "https://github.com/nvim-treesitter/nvim-treesitter",
+      "version": "'main'"
+    },
+    "plenary.nvim": {
+      "rev": "74b06c6c75e4eeb3108ec01852001636d85a932b",
+      "src": "https://github.com/nvim-lua/plenary.nvim"
+    },
+    "skkeleton": {
+      "rev": "cb6e529dada798929deefd879e32e418dab1c6ac",
+      "src": "https://github.com/vim-skk/skkeleton"
+    }
+  }
+}

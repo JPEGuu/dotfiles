@@ -4,7 +4,7 @@
 # 移行メモ:
 # - zsh プラグインは sheldon を廃止し HM ネイティブへ
 #   (autosuggestion / syntaxHighlighting / zsh-completions)。
-# - NVM は廃止（Node は home/ai.nix の nodejs_22 で Nix 管理）。
+# - NVM は廃止（Node は home/ai/default.nix の nodejs_22 で Nix 管理）。
 # - pacin/cargo-in/composerg/npmg/dotfiles-adopt 等の関数は
 #   Arch/symlink 運用前提のため移植しない（NixOS では nixos-rebuild 運用）。
 { config, pkgs, lib, osConfig, ... }:

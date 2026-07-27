@@ -28,17 +28,18 @@
     { nixpkgs, home-manager, nixos-wsl, noctalia, ... }:
     let
       system = "x86_64-linux";
+      userConfig = import ./config.nix;
 
       # 全ホスト共通で渡す引数
-      specialArgs = { inherit nixos-wsl; };
+      specialArgs = { inherit nixos-wsl userConfig; };
 
       # Home Manager を NixOS モジュールとして組み込む共通設定
       homeManagerModule = {
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
         home-manager.backupFileExtension = "hm-backup";
-        home-manager.extraSpecialArgs = { inherit noctalia; };
-        home-manager.users.jpeguu = import ./home;
+        home-manager.extraSpecialArgs = { inherit noctalia userConfig; };
+        home-manager.users.${userConfig.username} = import ./home;
       };
     in
     {

@@ -6,7 +6,7 @@
 #   raw toml を参照する（二重管理回避）。
 # - tmux / yazi / neovim は設定ファイル主体のため programs.* を使わず、
 #   packages.nix でツールを導入し各ツール module で既存設定を参照する。
-{ ... }:
+{ userConfig, ... }:
 
 {
   programs.starship.enable = true;
@@ -26,9 +26,10 @@
 
   programs.git = {
     enable = true;
+    lfs.enable = true;
     # コミット著者情報。メール実アドレスを晒さないため GitHub の noreply を使う。
     # 形式: <numeric-id>+<login>@users.noreply.github.com（gh api user で確認）。
-    settings.user.name = "JPEGuu";
-    settings.user.email = "102569155+JPEGuu@users.noreply.github.com";
+    settings.user.name = userConfig.git.name;
+    settings.user.email = userConfig.git.email;
   };
 }

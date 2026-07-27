@@ -17,7 +17,7 @@
   # 前提: この dotfiles リポジトリが ~/dotfiles に clone されていること。
   home.file =
     let
-      claudeDir = "${config.home.homeDirectory}/dotfiles/claude";
+      claudeDir = "${config.home.homeDirectory}/dotfiles/home/ai/claude";
     in
     {
       ".claude/CLAUDE.md".source =

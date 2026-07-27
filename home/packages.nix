@@ -7,7 +7,7 @@
 #   設定は home/<tool>/ の各 module で参照する。
 # - NixOS オプションで扱うもの（docker/openssh/zsh/sudo/locale/GPU 等）は
 #   common.nix / hosts/* 側で扱うため、ここには含めない。
-# - AI CLI は home/ai.nix で管理する。
+# - AI CLI は home/ai/default.nix で管理する。
 { pkgs, ... }:
 
 {

@@ -1,21 +1,72 @@
 -- ~/.config/nvim/init.lua
 
+-- Enable Nvim's built-in Lua module loader cache (faster require()). Keep first.
+vim.loader.enable()
+
 -- =============================================================================
--- 1. Bootstrap Mini.deps
+-- 1. Plugin Management (vim.pack)
 -- =============================================================================
-local path_package = vim.fn.stdpath('data') .. '/site/'
-local mini_path = path_package .. 'pack/deps/start/mini.nvim'
-if not vim.loop.fs_stat(mini_path) then
-    vim.cmd('echo "Installing `mini.nvim`" | redraw')
-    vim.fn.system({ 'git', 'clone', '--filter=blob:none', 'https://github.com/echasnovski/mini.nvim', mini_path })
-    vim.cmd('packadd mini.nvim | helptags ALL')
+local function github(repo)
+    if repo:match('^[%w+.-]+://') or repo:match('^git@') then
+        return repo
+    end
+    return 'https://github.com/' .. repo
 end
 
-require('mini.deps').setup({ path = { package = path_package } })
+local function normalize_spec(spec)
+    if type(spec) == 'string' then
+        return github(spec)
+    end
 
-local add = MiniDeps.add
-local now = MiniDeps.now
-local later = MiniDeps.later
+    local normalized = vim.deepcopy(spec)
+    if normalized.source ~= nil then
+        normalized.src = github(normalized.source)
+        normalized.source = nil
+    elseif normalized.src ~= nil then
+        normalized.src = github(normalized.src)
+    end
+    return normalized
+end
+
+local function add(spec)
+    local specs = spec
+    if type(spec) == 'string' or spec.source ~= nil or spec.src ~= nil then
+        specs = { spec }
+    end
+
+    local normalized = {}
+    for _, item in ipairs(specs) do
+        table.insert(normalized, normalize_spec(item))
+    end
+
+    vim.pack.add(normalized, { confirm = false, load = true })
+end
+
+vim.api.nvim_create_autocmd('PackChanged', {
+    callback = function(ev)
+        local data = ev.data or {}
+        local spec = data.spec or {}
+        if spec.name == 'nvim-treesitter' and (data.kind == 'install' or data.kind == 'update') then
+            if not data.active then
+                pcall(vim.cmd.packadd, 'nvim-treesitter')
+            end
+            pcall(vim.cmd, 'TSUpdate')
+        end
+    end,
+})
+
+-- mini.nvim supplies both the plugin modules and MiniMisc.safely(), which backs
+-- now()/later() below. Add (and load) it first so require('mini.misc') works.
+add({ source = 'nvim-mini/mini.nvim', version = 'stable' })
+
+-- Two-stage startup helpers backed by MiniMisc.safely():
+-- - now(f):   run immediately inside xpcall (errors are notified, not fatal).
+-- - later(f): queue f and run deferred callbacks spaced out (1ms per timer tick)
+--             so they never block input/redraw. A bare vim.schedule() would run
+--             every deferred block back-to-back in one burst -> not truly lazy.
+local misc = require('mini.misc')
+local function now(fn) misc.safely('now', fn) end
+local function later(fn) misc.safely('later', fn) end
 
 -- =============================================================================
 -- 2. Basic Configuration (Immediate)
@@ -109,6 +160,9 @@ now(function()
     vim.opt.fixendofline = false
     vim.opt.endofline = false
 
+    -- Prefer LF for new buffers while auto-detecting existing LF/CRLF files.
+    vim.opt.fileformats = { "unix", "dos" }
+
     -- Clipboard sharing
     vim.opt.clipboard = 'unnamedplus'
 
@@ -131,10 +185,7 @@ now(function()
     -- Treesitter Configuration (Updated for latest nvim-treesitter/main)
     add({
         source = 'nvim-treesitter/nvim-treesitter',
-        -- Use 'master' while monitoring updates in 'main'
-        checkout = 'main',
-        -- Perform action after every checkout
-        hooks = { post_checkout = function() vim.cmd('TSUpdate') end },
+        version = 'main',
     })
     -- Possible to immediately execute code which depends on the added plugin
     require('nvim-treesitter').setup({

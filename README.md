@@ -8,6 +8,7 @@
 dotfiles/
 ├── flake.nix                           # エントリポイント（nixosConfigurations.wsl / .desktop）
 ├── flake.lock                          # 入力リビジョン固定
+├── config.nix                          # ユーザー名・ホームパス・git identity
 ├── hosts/
 │   ├── wsl/default.nix                 # WSL 固有（wsl.enable, defaultUser）
 │   └── desktop/
@@ -16,22 +17,23 @@ dotfiles/
 ├── nixos/
 │   ├── common.nix                      # 両環境共通（nix flakes, allowUnfree, user, zsh, docker, ssh, locale）
 │   └── gui.nix                         # GUI システム層（my.gui.enable: niri / ly / PipeWire / フォント / polkit）
-├── home/                               # Home Manager
-│   ├── default.nix                     # HM エントリ（imports 集約）
-│   ├── packages.nix                    # home.packages（ユーザー向け CLI ツール）
-│   ├── shell.nix                       # zsh / 環境変数 / エイリアス / SKK辞書
-│   ├── programs.nix                    # starship / zoxide / fzf / git の enable
-│   ├── ai.nix                          # claude-code / codex + AI assistant 設定
-│   ├── nvim/                           # Neovim 設定（raw config co-location）
-│   ├── tmux/                           # tmux 設定
-│   ├── yazi/                           # yazi 設定
-│   ├── starship/                       # starship.toml
-│   ├── clojure/                        # deps.edn / tools
-│   └── gui/                            # GUI ユーザー層（wezterm / niri / Noctalia。osConfig.my.gui.enable で分岐）
-└── claude/
-    ├── CLAUDE.md                       # Claude Code / Codex 共通コンテキスト
-    ├── commands/                       # Claude Code 用共有コマンド
-    └── agents/                         # Claude Code 用共有 subagent 定義
+└── home/                               # Home Manager
+    ├── default.nix                     # HM エントリ（imports 集約）
+    ├── packages.nix                    # home.packages（ユーザー向け CLI ツール）
+    ├── shell.nix                       # zsh / 環境変数 / エイリアス / SKK辞書
+    ├── programs.nix                    # starship / zoxide / fzf / git の enable
+    ├── ai/
+    │   ├── default.nix                 # claude-code / codex + AI assistant 設定
+    │   └── claude/                     # Claude Code / Codex 共通コンテキスト
+    │       ├── CLAUDE.md
+    │       ├── commands/
+    │       └── agents/
+    ├── nvim/                           # Neovim 設定（raw config co-location）
+    ├── tmux/                           # tmux 設定
+    ├── yazi/                           # yazi 設定
+    ├── starship/                       # starship.toml
+    ├── clojure/                        # deps.edn / tools
+    └── gui/                            # GUI ユーザー層（wezterm / niri / Noctalia。osConfig.my.gui.enable で分岐）
 ```
 
 ## セットアップ
