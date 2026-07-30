@@ -9,4 +9,10 @@
     source = ./sessionizer.sh;
     executable = true;
   };
+
+  # Popup command wrapper. Keeps short-lived output and errors visible.
+  xdg.configFile."tmux/popup-run.sh" = {
+    source = ./popup-run.sh;
+    executable = true;
+  };
 }

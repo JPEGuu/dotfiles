@@ -354,7 +354,7 @@ later(function()
             -- Custom mapping descriptions
             { mode = 'n', keys = '<Leader>f', desc = '+Find' },
             { mode = 'n', keys = '<Leader>g', desc = '+Git' },
-            { mode = 'n', keys = '<Leader>n', desc = '+Notify' },
+            { mode = 'n', keys = '<Leader>n', desc = '+Notes' },
             { mode = 'n', keys = '<Leader>b', desc = '+Buffer' },
             { mode = 'n', keys = '<Leader>c', desc = '+Config' },
             { mode = 'n', keys = '<Leader>e', desc = 'File Explorer' },
@@ -398,7 +398,28 @@ later(function()
     map({ "n", "x" }, "<Leader>gc", MiniGit.show_at_cursor, { desc = "Git Context (Blame)" })
 
     -- Notify
-    map("n", "<Leader>nh", MiniNotify.show_history, { desc = "Notify History" })
+    vim.api.nvim_create_user_command('NotifyHistory', MiniNotify.show_history, { desc = 'Show notify history' })
+
+    -- Notes
+    local function toggle_markdown_checkbox()
+        local line = vim.api.nvim_get_current_line()
+        if line:match('%[ %]') then
+            vim.api.nvim_set_current_line(line:gsub('%[ %]', '[x]', 1))
+        elseif line:match('%[[xX]%]') then
+            vim.api.nvim_set_current_line(line:gsub('%[[xX]%]', '[ ]', 1))
+        end
+    end
+
+    vim.api.nvim_create_autocmd('FileType', {
+        pattern = 'markdown',
+        callback = function(args)
+            local note_opts = { buffer = args.buf, silent = true }
+            map('n', '<Leader>nn', '<Cmd>LspZkNew<CR>', vim.tbl_extend('force', note_opts, { desc = 'New Note' }))
+            map('n', '<Leader>nf', '<Cmd>LspZkList<CR>', vim.tbl_extend('force', note_opts, { desc = 'Find Notes' }))
+            map('n', '<Leader>nt', '<Cmd>LspZkTagList<CR>', vim.tbl_extend('force', note_opts, { desc = 'Find Note Tags' }))
+            map('n', '<Leader>nx', toggle_markdown_checkbox, vim.tbl_extend('force', note_opts, { desc = 'Toggle Checkbox' }))
+        end,
+    })
 
     -- Tab management
     map("n", "[t", ":tabprevious<CR>", { desc = "Previous Tab" })
@@ -538,6 +559,10 @@ later(function()
             -- Restore original notify after setup is complete
             vim.notify = original_notify
         end)
+
+        if vim.fn.executable('zk') == 1 then
+            pcall(vim.lsp.enable, 'zk')
+        end
     end)
 end)
 
