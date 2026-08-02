@@ -15,4 +15,10 @@
     source = ./popup-run.sh;
     executable = true;
   };
+
+  # 実行中の timewarrior 区間をステータスバー右に表示する（tmux.conf の status-right から呼ぶ）。
+  xdg.configFile."tmux/tmux-timetrack-status.sh" = {
+    source = ./tmux-timetrack-status.sh;
+    executable = true;
+  };
 }

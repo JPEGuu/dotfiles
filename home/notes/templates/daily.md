@@ -12,4 +12,4 @@ tags: [daily]
 
 ## 明日
 
-<!-- 週次（金曜）: dstask show-paused / dstask show-unorganised を確認 -->
+<!-- 週次（金曜）: t で棚卸し / tfix で未分類を修正 / twrep :week で工数確認 -->

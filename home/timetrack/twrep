@@ -1,0 +1,274 @@
+#!/usr/bin/env python3
+import argparse
+from collections import defaultdict
+from datetime import datetime, timezone
+from decimal import Decimal, ROUND_HALF_UP
+import json
+import subprocess
+import sys
+
+
+UTC = timezone.utc
+QUARTER = Decimal("0.25")
+UNCLASSIFIED = "未分類"
+NO_TAG = "（タグ無し）"
+INDENT = "　"
+
+
+def parse_ts(s):
+    return datetime.strptime(s, "%Y%m%dT%H%M%SZ").replace(tzinfo=UTC)
+
+
+def seconds_of(iv, now):
+    end = parse_ts(iv["end"]) if iv.get("end") else now
+    return max(0, int((end - parse_ts(iv["start"])).total_seconds()))
+
+
+def round_q(sec):
+    hours = Decimal(sec) / Decimal(3600)
+    return (hours / QUARTER).quantize(Decimal("1"), rounding=ROUND_HALF_UP) * QUARTER
+
+
+def fmt_hours(hours):
+    return f"{hours:.2f}h"
+
+
+def tags_of(iv):
+    tags = iv.get("tags", [])
+    return tags if isinstance(tags, list) else []
+
+
+def classify(tags):
+    project = None
+    tag = None
+    for t in tags:
+        key, sep, val = t.partition(":")
+        if not sep:
+            continue
+        if key == "project":
+            project = val
+        elif key == "tag":
+            tag = val
+    return project, tag
+
+
+def _multiple_tag_warnings(intervals):
+    warnings = []
+    for iv in intervals:
+        count = sum(1 for t in tags_of(iv) if t.partition(":")[0] == "tag" and ":" in t)
+        if count > 1:
+            warnings.append(f"interval {iv.get('id', '?')}: tag: が複数あります。最後を採用します。")
+    return warnings
+
+
+def _display_tag(t):
+    key, sep, val = t.partition(":")
+    if sep and key in {"description", "project", "tag"}:
+        return val
+    return t
+
+
+def _raw_label(tags):
+    labels = [_display_tag(t) for t in tags]
+    return " / ".join(labels) if labels else NO_TAG
+
+
+def _leaf_label(project, tag, tags):
+    if tag is not None:
+        return tag
+    if project is None:
+        raw = _raw_label(tags)
+        return raw if raw != NO_TAG else NO_TAG
+    return NO_TAG
+
+
+def _interval_start(iv):
+    try:
+        return parse_ts(iv["start"])
+    except Exception as exc:
+        raise ValueError(f"invalid timestamp for interval id {iv.get('id', '?')}: {exc}") from exc
+
+
+def _interval_seconds(iv, now):
+    try:
+        return seconds_of(iv, now)
+    except Exception as exc:
+        raise ValueError(f"invalid timestamp for interval id {iv.get('id', '?')}: {exc}") from exc
+
+
+def _min_start(mapping, key, start):
+    mapping[key] = min(mapping.get(key, start), start)
+
+
+def _project_matches(value, wanted):
+    return value == wanted or value.startswith(wanted + ".")
+
+
+def _project_tuple(project):
+    if project is None:
+        return (UNCLASSIFIED,)
+    parts = tuple(part for part in project.split(".") if part)
+    return parts if parts else (UNCLASSIFIED,)
+
+
+def _filter_interval(iv, project=None, tag=None):
+    iv_project, iv_tag = classify(tags_of(iv))
+    if project is not None and (iv_project is None or not _project_matches(iv_project, project)):
+        return False
+    if tag is not None and iv_tag != tag:
+        return False
+    return True
+
+
+def _aggregate(intervals, now, project=None, tag=None):
+    leaf_sec = defaultdict(int)
+    leaf_start = {}
+    unclassified_count = 0
+
+    for iv in intervals:
+        if not _filter_interval(iv, project=project, tag=tag):
+            continue
+        start = _interval_start(iv)
+        seconds = _interval_seconds(iv, now)
+        iv_project, iv_tag = classify(tags_of(iv))
+        if iv_project is None:
+            unclassified_count += 1
+        proj_tuple = _project_tuple(iv_project)
+        leaf = (proj_tuple, _leaf_label(iv_project, iv_tag, tags_of(iv)))
+        leaf_sec[leaf] += seconds
+        _min_start(leaf_start, leaf, start)
+
+    leaf_h = {key: round_q(seconds) for key, seconds in leaf_sec.items()}
+    node_h = defaultdict(lambda: Decimal(0))
+    node_start = {}
+    children = defaultdict(set)
+    roots = set()
+    total = Decimal(0)
+
+    for (proj_tuple, leaf_name), hours in leaf_h.items():
+        total += hours
+        start = leaf_start[(proj_tuple, leaf_name)]
+        for depth in range(1, len(proj_tuple) + 1):
+            node = proj_tuple[:depth]
+            node_h[node] += hours
+            _min_start(node_start, node, start)
+            if depth == 1:
+                roots.add(node)
+            else:
+                children[proj_tuple[: depth - 1]].add(node)
+        children[proj_tuple].add((proj_tuple, leaf_name))
+
+    return {
+        "leaf_h": leaf_h,
+        "leaf_start": leaf_start,
+        "node_h": node_h,
+        "node_start": node_start,
+        "children": children,
+        "roots": roots,
+        "total": total,
+        "unclassified_count": unclassified_count,
+    }
+
+
+def _sort_nodes(nodes, node_start):
+    return sorted(nodes, key=lambda node: (node_start[node], node[-1]))
+
+
+def _sort_leafs(leafs, leaf_start):
+    return sorted(leafs, key=lambda leaf: (leaf_start[leaf], leaf[1]))
+
+
+def _render_node(lines, node, data, depth):
+    name = node[-1]
+    lines.append(f"{INDENT * depth}・{name}（{fmt_hours(data['node_h'][node])}）")
+
+    child_nodes = [child for child in data["children"].get(node, set()) if isinstance(child[0], str)]
+    for child in _sort_nodes(child_nodes, data["node_start"]):
+        _render_node(lines, child, data, depth + 1)
+
+    leafs = [child for child in data["children"].get(node, set()) if isinstance(child[0], tuple)]
+    for leaf in _sort_leafs(leafs, data["leaf_start"]):
+        lines.append(f"{INDENT * (depth + 1)}・{leaf[1]}（{fmt_hours(data['leaf_h'][leaf])}）")
+
+
+def build_report(intervals, now, project=None, tag=None):
+    data = _aggregate(intervals, now, project=project, tag=tag)
+    lines = []
+    for root in _sort_nodes(data["roots"], data["node_start"]):
+        if lines:
+            lines.append("")
+        _render_node(lines, root, data, 0)
+
+    if lines:
+        lines.append("")
+    lines.append(f"合計 {fmt_hours(data['total'])}")
+    if data["unclassified_count"] > 0:
+        lines.append(f"未分類が {data['unclassified_count']} 件あります。tfix で修正できます。")
+    return "\n".join(lines)
+
+
+def build_unclassified(intervals):
+    lines = []
+    for iv in intervals:
+        project, tag = classify(tags_of(iv))
+        if project is not None and tag is not None:
+            continue
+        try:
+            start = parse_ts(iv["start"]).astimezone()
+            end = parse_ts(iv["end"]).astimezone().strftime("%H:%M") if iv.get("end") else "--:--"
+        except Exception as exc:
+            raise ValueError(f"invalid timestamp for interval id {iv.get('id', '?')}: {exc}") from exc
+        label = _raw_label(tags_of(iv))
+        lines.append(f"{iv['id']}\t{start:%Y-%m-%d} {start:%H:%M}-{end}  {label}")
+    return lines
+
+
+def load_intervals(range_hint):
+    if not sys.stdin.isatty():
+        raw = sys.stdin.read()
+        if raw.strip():
+            return json.loads(raw)
+    out = subprocess.run(
+        ["timew", "export", range_hint],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    return json.loads(out or "[]")
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("range", nargs="?", default=":day")
+    parser.add_argument("--project")
+    parser.add_argument("--tag")
+    parser.add_argument("--list-unclassified", action="store_true")
+    args = parser.parse_args(argv)
+
+    try:
+        intervals = load_intervals(args.range)
+        for warning in _multiple_tag_warnings(intervals):
+            print(warning, file=sys.stderr)
+        if args.list_unclassified:
+            output = "\n".join(build_unclassified(intervals))
+        else:
+            output = build_report(
+                intervals,
+                datetime.now(UTC),
+                project=args.project,
+                tag=args.tag,
+            )
+    except subprocess.CalledProcessError as exc:
+        sys.stderr.write(exc.stderr)
+        return exc.returncode
+    except (json.JSONDecodeError, ValueError, KeyError) as exc:
+        print(exc, file=sys.stderr)
+        return 1
+
+    if output:
+        print(output)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -11,7 +11,7 @@
 
     # 設定ファイル主体のツール（raw config を co-location）
     ./notes    # zk（メモ / 日誌）
-    ./task     # dstask（タスク）
+    ./timetrack # Taskwarrior + Timewarrior（タスク / 工数）
     ./nvim
     ./tmux
     ./yazi
