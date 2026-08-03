@@ -53,7 +53,7 @@ in
     executable = true;
   };
 
-  programs.zsh.initContent = lib.mkAfter ''
+  xdg.configFile."timetrack/panel.zsh".text = ''
     _tt_kinds() {
       printf '%s\n' ${lib.escapeShellArgs kinds}
     }
@@ -108,20 +108,20 @@ in
 
     _tt_link() {
       emulate -L zsh
-      local id=$1 uuid summary note rel nb="$HOME/notes"
-      uuid=$(task _get "$id".uuid) || return 1
-      summary=$(task _get "$id".description)
+      local target=$1 uuid summary note rel nb="$HOME/notes"
+      uuid=$(task _get "$target".uuid) || return 1
+      summary=$(task _get "$target".description)
       [[ -d $nb/.zk ]] || { print -u2 "zk notebook 未初期化: $nb"; return 1; }
       note=$(zk new --notebook-dir "$nb" --working-dir "$nb" --no-input \
                --title "$summary" --extra "task=$uuid" --print-path) || return 1
       rel=''${note#"$nb"/}
-      task "$id" annotate "related-note: $rel"
+      task "$target" annotate "related-note: $rel"
       ''${EDITOR:-nvim} "$note"
     }
 
-    ta() {
+    _tt_add() {
       emulate -L zsh
-      local desc="$*" proj kind id
+      local desc="$*" proj kind out id
       [[ -z $desc ]] && read "desc?description: "
       [[ -z $desc ]] && return 1
       proj=$(_tt_pick_project) || return 1
@@ -129,30 +129,131 @@ in
       local -a args=(add "$desc")
       [[ -n $proj ]] && args+=(project:"$proj")
       [[ -n $kind ]] && args+=(+"$kind")
-      # add した新規タスクの ID を拾い、その場で start（実行中は 1 本に絞るため既存を止める）
-      id=$(task "''${args[@]}" 2>&1 | grep -oP 'Created task \K[0-9]+')
+      out=$(task "''${args[@]}" 2>&1) || { print -u2 -- "$out"; return 1; }
+      id=$(print -r -- "$out" | grep -oP 'Created task \K[0-9]+')
       [[ -n $id ]] || { print -u2 "task add failed"; return 1; }
+      print -r -- "$id"
+    }
+
+    ta() {
+      emulate -L zsh
+      local id
+      id=$(_tt_add "$@") || return 1
       _tt_stop_active
       task "$id" start
     }
 
+    tn() {
+      emulate -L zsh
+      _tt_add "$@" >/dev/null
+    }
+
+    _tt_panel_filter_file() {
+      emulate -L zsh
+      print -r -- "''${XDG_RUNTIME_DIR:-/tmp}/tt-panel-donefilter"
+    }
+
+    _tt_panel_emit() {
+      emulate -L zsh
+      local icon=$1 color=$2 jq_filter=$3 reset=$'\033[0m'
+      [[ -z $color ]] && reset=""
+      jq -r --arg icon "$icon" --arg color "$color" --arg reset "$reset" "$jq_filter"'
+        | .[]
+        | select(.uuid != null)
+        | "\(.uuid)\t\($color)\($icon)\($reset)  \(.project // "-")  [\((.tags // []) | join(","))]  \(.description // "")"
+      '
+    }
+
+    _tt_panel_list() {
+      emulate -L zsh
+      local green=$'\033[32m' dim=$'\033[2m'
+      local -a done_filter=(status:completed)
+      [[ -e $(_tt_panel_filter_file) ]] || done_filter+=(end.after:today)
+
+      task +ACTIVE status:pending export 2>/dev/null \
+        | _tt_panel_emit "▶" "$green" '.'
+      task status:pending -ACTIVE export 2>/dev/null \
+        | _tt_panel_emit "○" "" 'sort_by(.urgency // 0) | reverse'
+      task "''${done_filter[@]}" export 2>/dev/null \
+        | _tt_panel_emit "✓" "$dim" 'sort_by(.end // "") | reverse'
+    }
+
+    _tt_panel_do() {
+      emulate -L zsh
+      local verb=$1 uuid=$2 task_status start id file
+      case $verb in
+        toggle)
+          [[ -n $uuid ]] || return 1
+          task_status=$(task _get "$uuid".status 2>/dev/null) || return 1
+          start=$(task _get "$uuid".start 2>/dev/null || true)
+          if [[ $task_status == completed ]]; then
+            task "$uuid" modify status:pending >/dev/null || return 1
+            _tt_stop_active
+            task "$uuid" start >/dev/null
+          elif [[ -n $start ]]; then
+            task "$uuid" stop >/dev/null
+          else
+            _tt_stop_active
+            task "$uuid" start >/dev/null
+          fi
+          ;;
+        done)
+          [[ -n $uuid ]] || return 1
+          task "$uuid" done >/dev/null
+          ;;
+        edit)
+          [[ -n $uuid ]] || return 1
+          task "$uuid" edit
+          ;;
+        delete)
+          [[ -n $uuid ]] || return 1
+          task rc.confirmation=off "$uuid" delete >/dev/null
+          ;;
+        link)
+          [[ -n $uuid ]] || return 1
+          _tt_link "$uuid"
+          ;;
+        toggle-filter)
+          file=$(_tt_panel_filter_file)
+          if [[ -e $file ]]; then
+            rm -f -- "$file"
+          else
+            : > "$file"
+          fi
+          ;;
+        add)
+          _tt_add >/dev/null
+          ;;
+        add-start)
+          id=$(_tt_add) || return 1
+          _tt_stop_active
+          task "$id" start
+          ;;
+        *)
+          print -u2 "unknown verb: $verb"
+          return 1
+          ;;
+      esac
+    }
+
     t() {
       emulate -L zsh
-      local id act dep
-      id=$(_tt_pick_task status:pending) || return 1
-      [[ -z $id ]] && return 1
-      act=$(printf '%s\n' start stop done edit depends link delete \
-            | fzf --prompt='action> ' --height=40% --reverse) || return 1
-      case $act in
-        start)   _tt_stop_active; task "$id" start ;;
-        stop)    task "$id" stop ;;
-        done)    task "$id" done ;;
-        edit)    task "$id" edit ;;
-        delete)  task rc.confirmation=off "$id" delete ;;
-        depends) dep=$(_tt_pick_task status:pending)
-                 [[ -n $dep ]] && task "$id" modify depends:"$(task _get "$dep".uuid)" ;;
-        link)    _tt_link "$id" ;;
-      esac
+      local panel="''${XDG_CONFIG_HOME:-$HOME/.config}/timetrack/panel.zsh"
+      local reload="zsh -c 'source \"\$1\"; _tt_panel_list' tt-panel ''${(q)panel}"
+      _tt_panel_list | fzf --ansi --multi --delimiter='\t' --with-nth=2.. \
+        --prompt='timetrack> ' --height=100% --reverse \
+        --preview='task {1} information' --preview-window='right:52%:wrap' \
+        --header-first \
+        --header=$'Enter:開始/停止  C-a:追加のみ  C-g:追加&Start  C-d:完了  C-e:編集\nC-x:削除  C-l:ノート  C-t:done表示切替  ↑↓ / C-j C-k:移動  Esc:終了' \
+        --bind "enter:execute-silent(zsh -c 'source \"\$1\"; _tt_panel_do toggle \"\$2\"' tt-panel ''${(q)panel} {1})+reload($reload)" \
+        --bind "ctrl-a:execute(zsh -c 'source \"\$1\"; _tt_panel_do add' tt-panel ''${(q)panel})+reload($reload)" \
+        --bind "ctrl-g:execute(zsh -c 'source \"\$1\"; _tt_panel_do add-start' tt-panel ''${(q)panel})+reload($reload)" \
+        --bind "ctrl-d:execute-silent(zsh -c 'source \"\$1\"; _tt_panel_do done \"\$2\"' tt-panel ''${(q)panel} {1})+reload($reload)" \
+        --bind "ctrl-e:execute(zsh -c 'source \"\$1\"; _tt_panel_do edit \"\$2\"' tt-panel ''${(q)panel} {1})+reload($reload)" \
+        --bind "ctrl-x:execute-silent(zsh -c 'source \"\$1\"; _tt_panel_do delete \"\$2\"' tt-panel ''${(q)panel} {1})+reload($reload)" \
+        --bind "ctrl-l:execute(zsh -c 'source \"\$1\"; _tt_panel_do link \"\$2\"' tt-panel ''${(q)panel} {1})+reload($reload)" \
+        --bind "ctrl-t:execute-silent(zsh -c 'source \"\$1\"; _tt_panel_do toggle-filter' tt-panel ''${(q)panel})+reload($reload)" \
+        >/dev/null
     }
 
     tfix() {
@@ -170,5 +271,9 @@ in
       [[ -n $kind ]] && retag+=("tag:$kind")
       timew "''${retag[@]}" :yes
     }
+  '';
+
+  programs.zsh.initContent = lib.mkAfter ''
+    source ''${XDG_CONFIG_HOME:-$HOME/.config}/timetrack/panel.zsh
   '';
 }

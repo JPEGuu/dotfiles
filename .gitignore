@@ -8,3 +8,7 @@
 # AI assistant runtime state / private local overrides
 .claude/
 .codex/
+
+# Python caches (timetrack のテスト実行で生成される)
+__pycache__/
+*.pyc

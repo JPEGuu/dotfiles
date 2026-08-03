@@ -65,10 +65,12 @@ class TwrepTest(unittest.TestCase):
             "・自社システム（0.75h）",
             "　・CSV出力機能（0.50h）",
             "　　・コーディング（0.50h）",
-            "　・（タグ無し）（0.25h）",
+            "　　　・CSVのカラム仕様を確認する（0.50h）",
+            "　・追加確認（0.25h）",
             "",
             "・未分類（0.50h）",
             "　・調査（0.50h）",
+            "　　・分類なし（0.50h）",
             "",
             "合計 1.25h",
             "未分類が 1 件あります。tfix で修正できます。",
@@ -90,6 +92,7 @@ class TwrepTest(unittest.TestCase):
 
         self.assertIn("・P（0.50h）", report)
         self.assertIn("　・設計（0.25h）", report)
+        self.assertIn("　　・（説明無し）（0.25h）", report)
         self.assertIn("　・調査（0.25h）", report)
         self.assertIn("合計 0.50h", report)
 
@@ -103,10 +106,12 @@ class TwrepTest(unittest.TestCase):
 
         self.assertIn("・A（1.00h）", report)
         self.assertIn("　・設計（1.00h）", report)
+        self.assertIn("　　・（説明無し）（1.00h）", report)
         self.assertIn("・B（1.00h）", report)
         self.assertIn("　・C（1.00h）", report)
         self.assertIn("　　・D（1.00h）", report)
         self.assertIn("　　　・調査（1.00h）", report)
+        self.assertIn("　　　　・（説明無し）（1.00h）", report)
 
     def test_t5_missing_project_becomes_unclassified(self):
         intervals = [
@@ -117,9 +122,10 @@ class TwrepTest(unittest.TestCase):
 
         self.assertIn("・未分類（0.25h）", report)
         self.assertIn("　・調査（0.25h）", report)
+        self.assertIn("　　・調べる（0.25h）", report)
         self.assertIn("合計 0.25h", report)
 
-    def test_t6_missing_tag_becomes_no_tag_leaf(self):
+    def test_t6_missing_tag_skips_tag_level(self):
         intervals = [
             iv(1, "20260801T090000Z", "20260801T091500Z", ["description:分類なし", "project:P"]),
         ]
@@ -127,10 +133,11 @@ class TwrepTest(unittest.TestCase):
         report = self.twrep.build_report(intervals, fixed_now())
 
         self.assertIn("・P（0.25h）", report)
-        self.assertIn("　・（タグ無し）（0.25h）", report)
+        self.assertIn("　・分類なし（0.25h）", report)
+        self.assertNotIn("（タグ無し）", report)
         self.assertNotIn("未分類が", report)
 
-    def test_t7_unlabeled_timew_tags_are_unclassified_and_displayed_raw(self):
+    def test_t7_missing_description_uses_fallback(self):
         intervals = [
             iv(1, "20260801T090000Z", "20260801T093000Z", ["manual", "foo:bar"]),
         ]
@@ -138,7 +145,7 @@ class TwrepTest(unittest.TestCase):
         report = self.twrep.build_report(intervals, fixed_now())
 
         self.assertIn("・未分類（0.50h）", report)
-        self.assertIn("　・manual / foo:bar（0.50h）", report)
+        self.assertIn("　・（説明無し）（0.50h）", report)
 
     def test_t8_running_interval_uses_now(self):
         now = datetime(2026, 8, 1, 10, 30, tzinfo=timezone.utc)
@@ -146,7 +153,9 @@ class TwrepTest(unittest.TestCase):
             iv(1, "20260801T100000Z", None, ["project:P", "tag:コーディング"]),
         ]
 
-        self.assertIn("　・コーディング（0.50h）", self.twrep.build_report(intervals, now))
+        report = self.twrep.build_report(intervals, now)
+        self.assertIn("　・コーディング（0.50h）", report)
+        self.assertIn("　　・（説明無し）（0.50h）", report)
 
     def test_t9_sort_by_earliest_start_at_each_level(self):
         intervals = [
@@ -168,6 +177,7 @@ class TwrepTest(unittest.TestCase):
         report = self.twrep.build_report(intervals, fixed_now())
 
         self.assertIn("　・その他（0.00h）", report)
+        self.assertIn("　　・（説明無し）（0.00h）", report)
         self.assertIn("合計 0.00h", report)
 
     def test_t11_project_filter_matches_prefix_with_dot_boundary(self):
@@ -194,6 +204,7 @@ class TwrepTest(unittest.TestCase):
 
         self.assertNotIn("設計", report)
         self.assertIn("　・調査（1.00h）", report)
+        self.assertIn("　　・（説明無し）（1.00h）", report)
         self.assertIn("合計 1.00h", report)
 
     def test_t13_multiple_tag_uses_last_and_warns_in_cli(self):
@@ -210,8 +221,9 @@ class TwrepTest(unittest.TestCase):
         self.assertEqual(0, code)
         self.assertIn("tag: が複数あります", stderr.getvalue())
         self.assertIn("　・調査（1.00h）", stdout.getvalue())
+        self.assertIn("　　・（説明無し）（1.00h）", stdout.getvalue())
 
-    def test_t14_description_colon_does_not_join_aggregation(self):
+    def test_t14_description_is_leaf_and_may_contain_colon(self):
         intervals = [
             iv(1, "20260801T090000Z", "20260801T100000Z", [
                 "description:API: CSV",
@@ -223,12 +235,33 @@ class TwrepTest(unittest.TestCase):
         report = self.twrep.build_report(intervals, fixed_now())
 
         self.assertIn("・P（1.00h）", report)
-        self.assertNotIn("API", report)
+        self.assertIn("　・設計（1.00h）", report)
+        self.assertIn("　　・API: CSV（1.00h）", report)
 
-    def test_t15_empty_input(self):
+    def test_t15_same_project_tag_description_is_merged(self):
+        intervals = [
+            iv(1, "20260801T090000Z", "20260801T091000Z", [
+                "description:同じ葉",
+                "project:P",
+                "tag:設計",
+            ]),
+            iv(2, "20260801T100000Z", "20260801T101000Z", [
+                "description:同じ葉",
+                "project:P",
+                "tag:設計",
+            ]),
+        ]
+
+        report = self.twrep.build_report(intervals, fixed_now())
+
+        self.assertIn("・P（0.25h）", report)
+        self.assertIn("　・設計（0.25h）", report)
+        self.assertEqual(1, report.count("　　・同じ葉（0.25h）"))
+
+    def test_t16_empty_input(self):
         self.assertEqual("合計 0.00h", self.twrep.build_report([], fixed_now()))
 
-    def test_t16_list_unclassified_format(self):
+    def test_t17_list_unclassified_format(self):
         intervals = [
             iv(42, "20260801T090000Z", "20260801T093000Z", [
                 "description:手動",
@@ -257,6 +290,7 @@ class TwrepTest(unittest.TestCase):
         self.assertEqual(0, code)
         mocked_run.assert_not_called()
         self.assertIn("・P（1.00h）", stdout.getvalue())
+        self.assertIn("　　・（説明無し）（1.00h）", stdout.getvalue())
 
     def test_timew_nonzero_exit_code_is_propagated(self):
         exc = subprocess.CalledProcessError(3, ["timew"], stderr="timew failed\n")

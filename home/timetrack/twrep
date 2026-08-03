@@ -12,6 +12,7 @@ UTC = timezone.utc
 QUARTER = Decimal("0.25")
 UNCLASSIFIED = "未分類"
 NO_TAG = "（タグ無し）"
+NO_DESCRIPTION = "（説明無し）"
 INDENT = "　"
 
 
@@ -52,6 +53,15 @@ def classify(tags):
     return project, tag
 
 
+def description_of(tags):
+    description = None
+    for t in tags:
+        key, sep, val = t.partition(":")
+        if sep and key == "description":
+            description = val
+    return description if description else NO_DESCRIPTION
+
+
 def _multiple_tag_warnings(intervals):
     warnings = []
     for iv in intervals:
@@ -71,15 +81,6 @@ def _display_tag(t):
 def _raw_label(tags):
     labels = [_display_tag(t) for t in tags]
     return " / ".join(labels) if labels else NO_TAG
-
-
-def _leaf_label(project, tag, tags):
-    if tag is not None:
-        return tag
-    if project is None:
-        raw = _raw_label(tags)
-        return raw if raw != NO_TAG else NO_TAG
-    return NO_TAG
 
 
 def _interval_start(iv):
@@ -133,8 +134,11 @@ def _aggregate(intervals, now, project=None, tag=None):
         iv_project, iv_tag = classify(tags_of(iv))
         if iv_project is None:
             unclassified_count += 1
-        proj_tuple = _project_tuple(iv_project)
-        leaf = (proj_tuple, _leaf_label(iv_project, iv_tag, tags_of(iv)))
+        path = list(_project_tuple(iv_project))
+        if iv_tag:
+            path.append(iv_tag)
+        path.append(description_of(tags_of(iv)))
+        leaf = tuple(path)
         leaf_sec[leaf] += seconds
         _min_start(leaf_start, leaf, start)
 
@@ -145,22 +149,19 @@ def _aggregate(intervals, now, project=None, tag=None):
     roots = set()
     total = Decimal(0)
 
-    for (proj_tuple, leaf_name), hours in leaf_h.items():
+    for leaf, hours in leaf_h.items():
         total += hours
-        start = leaf_start[(proj_tuple, leaf_name)]
-        for depth in range(1, len(proj_tuple) + 1):
-            node = proj_tuple[:depth]
+        start = leaf_start[leaf]
+        for depth in range(1, len(leaf) + 1):
+            node = leaf[:depth]
             node_h[node] += hours
             _min_start(node_start, node, start)
             if depth == 1:
                 roots.add(node)
             else:
-                children[proj_tuple[: depth - 1]].add(node)
-        children[proj_tuple].add((proj_tuple, leaf_name))
+                children[leaf[: depth - 1]].add(node)
 
     return {
-        "leaf_h": leaf_h,
-        "leaf_start": leaf_start,
         "node_h": node_h,
         "node_start": node_start,
         "children": children,
@@ -174,21 +175,12 @@ def _sort_nodes(nodes, node_start):
     return sorted(nodes, key=lambda node: (node_start[node], node[-1]))
 
 
-def _sort_leafs(leafs, leaf_start):
-    return sorted(leafs, key=lambda leaf: (leaf_start[leaf], leaf[1]))
-
-
 def _render_node(lines, node, data, depth):
     name = node[-1]
     lines.append(f"{INDENT * depth}・{name}（{fmt_hours(data['node_h'][node])}）")
 
-    child_nodes = [child for child in data["children"].get(node, set()) if isinstance(child[0], str)]
-    for child in _sort_nodes(child_nodes, data["node_start"]):
+    for child in _sort_nodes(data["children"].get(node, set()), data["node_start"]):
         _render_node(lines, child, data, depth + 1)
-
-    leafs = [child for child in data["children"].get(node, set()) if isinstance(child[0], tuple)]
-    for leaf in _sort_leafs(leafs, data["leaf_start"]):
-        lines.append(f"{INDENT * (depth + 1)}・{leaf[1]}（{fmt_hours(data['leaf_h'][leaf])}）")
 
 
 def build_report(intervals, now, project=None, tag=None):
