@@ -1,24 +1,5 @@
 { pkgs, lib, ... }:
 
-let
-  kinds = [
-    "設計"
-    "調査"
-    "ドキュメント整備"
-    "コーディング"
-    "単体テスト"
-    "結合テスト準備"
-    "結合テスト消化"
-    "環境整備"
-    "MTG"
-    "連絡・相談対応"
-    "タスク管理"
-    "工数管理等"
-    "朝会・作業報告"
-    "日報作成"
-    "その他"
-  ];
-in
 {
   programs.taskwarrior = {
     enable = true;
@@ -54,10 +35,6 @@ in
   };
 
   xdg.configFile."timetrack/panel.zsh".text = ''
-    _tt_kinds() {
-      printf '%s\n' ${lib.escapeShellArgs kinds}
-    }
-
     # fzf をプロセス置換で駆動し $? を直接取る（パイプだと pipestatus が不安定で、
     # ESC の終了コードを取りこぼすことがある）。$status は zsh 予約変数なので ec を使う。
     _tt_pick_project() {
@@ -75,13 +52,13 @@ in
     _tt_pick_kind() {
       emulate -L zsh
       local out ec
-      # 中断は ESC(130) のみ。一致なし(exit 1)は「tag 無し」として空で通す。
-      out=$(fzf --prompt='tag> ' --height=40% --reverse \
-            < <({ print -r -- "(none)"; _tt_kinds }))
+      # 中断は ESC(130) のみ。fzf は新規入力/一致なしで exit 1 を返すが、
+      # --print-query で入力値は取れているので新規 tag として採用する。
+      out=$(fzf --print-query --prompt='tag (empty=none)> ' --height=40% --reverse \
+            < <(task status.any: _unique tags 2>/dev/null))
       ec=$?
       (( ec == 130 )) && return 1
-      [[ $out == "(none)" ]] && { print -r -- ""; return 0; }
-      print -r -- "$out"
+      print -r -- "''${out##*$'\n'}"
     }
 
     _tt_pick_task() {
