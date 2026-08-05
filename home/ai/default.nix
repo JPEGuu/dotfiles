@@ -1,7 +1,7 @@
 # AI CLI 統合（Claude Code / OpenAI Codex）
 #
 # - claude-code / codex は nixpkgs 収録パッケージを使用（npm グローバル運用は廃止）。
-# - Claude/Codex の共有コンテキストと各ツール固有設定をリンクする。
+# - Claude/Codex の共通コンテキストと各ツール固有設定をリンクする。
 { config, pkgs, ... }:
 
 {
@@ -18,12 +18,20 @@
   home.file =
     let
       claudeDir = "${config.home.homeDirectory}/dotfiles/home/ai/claude";
+      codexDir = "${config.home.homeDirectory}/dotfiles/home/ai/codex";
+      sharedDir = "${config.home.homeDirectory}/dotfiles/home/ai/shared";
     in
     {
       ".claude/CLAUDE.md".source =
         config.lib.file.mkOutOfStoreSymlink "${claudeDir}/CLAUDE.md";
+      ".claude/settings.json".source =
+        config.lib.file.mkOutOfStoreSymlink "${claudeDir}/settings.json";
       ".codex/AGENTS.md".source =
-        config.lib.file.mkOutOfStoreSymlink "${claudeDir}/CLAUDE.md";
+        config.lib.file.mkOutOfStoreSymlink "${codexDir}/AGENTS.md";
+      ".claude/shared".source =
+        config.lib.file.mkOutOfStoreSymlink "${sharedDir}";
+      ".codex/shared".source =
+        config.lib.file.mkOutOfStoreSymlink "${sharedDir}";
       ".claude/commands".source =
         config.lib.file.mkOutOfStoreSymlink "${claudeDir}/commands";
       ".claude/agents".source =
