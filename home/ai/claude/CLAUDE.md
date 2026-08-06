@@ -1,6 +1,6 @@
 # Claude Code 固有コンテキスト
 
-共通ルールは `@shared/CONTEXT.md` を必ず参照すること。
+共通ルールとして @shared/CONTEXT.md を読み込む（以下は Claude Code 固有の上書き）。
 
 ## 役割
 
