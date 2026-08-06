@@ -49,6 +49,10 @@
     "skkeleton": {
       "rev": "cb6e529dada798929deefd879e32e418dab1c6ac",
       "src": "https://github.com/vim-skk/skkeleton"
+    },
+    "zk-nvim": {
+      "rev": "922134d8f95f0169bb572b09f2fa643573cb51f8",
+      "src": "https://github.com/zk-org/zk-nvim"
     }
   }
 }

@@ -410,16 +410,37 @@ later(function()
         end
     end
 
+    -- Notebook-wide entry points: available from any buffer (zk resolves the
+    -- notebook via $ZK_NOTEBOOK_DIR), so you can find/create notes without a
+    -- note already open.
+    map('n', '<Leader>nn', '<Cmd>ZkNew<CR>', { desc = 'New Note', silent = true })
+    map('n', '<Leader>nf', '<Cmd>ZkNotes<CR>', { desc = 'Find Notes', silent = true })
+    map('n', '<Leader>nt', '<Cmd>ZkTags<CR>', { desc = 'Find Tags', silent = true })
+
+    -- Note-centric maps operate on the current note, so bind them per markdown
+    -- buffer only.
+    local function set_note_keymaps(buf)
+        local note_opts = { buffer = buf, silent = true }
+        map('n', '<Leader>nb', '<Cmd>ZkBacklinks<CR>', vim.tbl_extend('force', note_opts, { desc = 'Backlinks' }))
+        map('n', '<Leader>nl', '<Cmd>ZkLinks<CR>', vim.tbl_extend('force', note_opts, { desc = 'Outgoing Links' }))
+        map('n', '<Leader>ni', '<Cmd>ZkInsertLink<CR>', vim.tbl_extend('force', note_opts, { desc = 'Insert Link' }))
+        map('x', '<Leader>nn', ":'<,'>ZkNewFromTitleSelection<CR>", vim.tbl_extend('force', note_opts, { desc = 'New Note from Selection' }))
+        map('n', '<Leader>nx', toggle_markdown_checkbox, vim.tbl_extend('force', note_opts, { desc = 'Toggle Checkbox' }))
+    end
+
     vim.api.nvim_create_autocmd('FileType', {
         pattern = 'markdown',
-        callback = function(args)
-            local note_opts = { buffer = args.buf, silent = true }
-            map('n', '<Leader>nn', '<Cmd>LspZkNew<CR>', vim.tbl_extend('force', note_opts, { desc = 'New Note' }))
-            map('n', '<Leader>nf', '<Cmd>LspZkList<CR>', vim.tbl_extend('force', note_opts, { desc = 'Find Notes' }))
-            map('n', '<Leader>nt', '<Cmd>LspZkTagList<CR>', vim.tbl_extend('force', note_opts, { desc = 'Find Note Tags' }))
-            map('n', '<Leader>nx', toggle_markdown_checkbox, vim.tbl_extend('force', note_opts, { desc = 'Toggle Checkbox' }))
-        end,
+        callback = function(args) set_note_keymaps(args.buf) end,
     })
+
+    -- This block runs inside later() (after startup), so the FileType event for
+    -- the file nvim was launched with has already fired and the autocmd above
+    -- would miss it. Apply the keymaps to already-open markdown buffers too.
+    for _, b in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.api.nvim_buf_is_loaded(b) and vim.bo[b].filetype == 'markdown' then
+            set_note_keymaps(b)
+        end
+    end
 
     -- Tab management
     map("n", "[t", ":tabprevious<CR>", { desc = "Previous Tab" })
@@ -559,10 +580,30 @@ later(function()
             -- Restore original notify after setup is complete
             vim.notify = original_notify
         end)
+    end)
+end)
 
-        if vim.fn.executable('zk') == 1 then
-            pcall(vim.lsp.enable, 'zk')
-        end
+-- Notes: zk LSP + link commands (zk-nvim).
+-- zk-nvim manages the `zk lsp` server itself (cmd = {"zk","lsp"}), so no
+-- separate vim.lsp.enable('zk') is needed. The zk binary comes from Nix
+-- (programs.zk), not Mason, so it is intentionally absent from the mason
+-- ensure_installed list above.
+later(function()
+    add({ source = 'zk-org/zk-nvim' })
+    safecall('zk', function(zk)
+        zk.setup({
+            picker = 'minipick',
+            lsp = {
+                config = {
+                    name = 'zk',
+                    cmd = { 'zk', 'lsp' },
+                    filetypes = { 'markdown' },
+                },
+                auto_attach = {
+                    enabled = true,
+                },
+            },
+        })
     end)
 end)
 
