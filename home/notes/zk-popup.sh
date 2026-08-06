@@ -4,7 +4,7 @@ set -euo pipefail
 
 usage() {
     cat <<'USAGE'
-Usage: zk-popup.sh <daily|edit-recent> [args...]
+Usage: zk-popup.sh <manage> [args...]
 USAGE
 }
 
@@ -34,17 +34,11 @@ if [[ ! -d "$notebook_dir/.zk" ]]; then
 fi
 
 case "$action" in
-    daily)
-        exec zk \
-            --notebook-dir "$notebook_dir" \
-            --working-dir "$notebook_dir" \
-            daily "$@"
-        ;;
-    edit-recent)
-        exec zk \
-            --notebook-dir "$notebook_dir" \
-            --working-dir "$notebook_dir" \
-            edit --interactive --sort modified- "$@"
+    manage)
+        require_command zsh
+        require_command jq
+        require_command fzf
+        exec zsh -ic 'zn "$@"' zk-popup "$@"
         ;;
     *)
         usage >&2
