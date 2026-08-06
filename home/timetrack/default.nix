@@ -85,10 +85,20 @@
 
     _tt_link() {
       emulate -L zsh
-      local target=$1 uuid summary note rel nb="$HOME/notes"
+      local target=$1 uuid summary note rel old_rel old_note nb="$HOME/notes"
       uuid=$(task _get "$target".uuid) || return 1
       summary=$(task _get "$target".description)
       [[ -d $nb/.zk ]] || { print -u2 "zk notebook 未初期化: $nb"; return 1; }
+      old_rel=$(task "$target" export \
+                  | jq -r 'first(.[0].annotations[]?.description | select(startswith("related-note: ")) | sub("^related-note: "; "")) // empty') || return 1
+      if [[ -n $old_rel ]]; then
+        old_note="$nb/$old_rel"
+        if [[ -f $old_note ]]; then
+          ''${EDITOR:-nvim} "$old_note"
+          return
+        fi
+        task "$target" denotate "related-note: $old_rel" || return 1
+      fi
       note=$(zk new --notebook-dir "$nb" --working-dir "$nb" --no-input \
                --title "$summary" --extra "task=$uuid" --print-path) || return 1
       rel=''${note#"$nb"/}
