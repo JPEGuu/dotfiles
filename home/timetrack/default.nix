@@ -165,6 +165,86 @@
         | _tt_panel_emit "✓" "$dim" 'sort_by(.end // "") | reverse'
     }
 
+    _tt_panel_report() {
+      emulate -L zsh
+      ~/.local/bin/twrep :day --color 2>/dev/null
+    }
+
+    _tt_iv_format() {
+      emulate -L zsh
+      jq -r '
+        .[]
+        | "@\(.id)\t"
+          + (.start | strptime("%Y%m%dT%H%M%SZ") | mktime | strflocaltime("%H:%M"))
+          + "-"
+          + (if .end then (.end | strptime("%Y%m%dT%H%M%SZ") | mktime | strflocaltime("%H:%M")) else "--:--" end)
+          + "  "
+          + ((.tags // [] | map(select(startswith("project:")))     | .[0] // "project:-"   | ltrimstr("project:")))
+          + "/"
+          + ((.tags // [] | map(select(startswith("description:"))) | .[0] // "description:" | ltrimstr("description:")))
+      '
+    }
+
+    _tt_fix_time() {
+      emulate -L zsh
+      local uuid=$1 task_status task_start iid is_open interval ec display field val new cur out
+      [[ -n $uuid ]] || return 1
+
+      task_status=$(task _get "$uuid".status 2>/dev/null) || return 1
+      task_start=$(task _get "$uuid".start 2>/dev/null || true)
+      if [[ $task_status == pending && -n $task_start ]]; then
+        iid="@1"
+        is_open=1
+        display=$(timew export @1 2>/dev/null | _tt_iv_format)
+        display="''${display#*$'\t'}"
+      else
+        interval=$(timew export :day 2>/dev/null | _tt_iv_format \
+          | fzf --delimiter='\t' --with-nth=2.. --prompt='interval> ' --height=60% --reverse)
+        ec=$?
+        (( ec == 130 )) && return
+        [[ -z $interval ]] && return
+        iid="''${interval%%$'\t'*}"
+        display="''${interval#*$'\t'}"
+        if [[ "''${display%%  *}" == *"--:--"* ]]; then
+          is_open=1
+        else
+          is_open=0
+        fi
+      fi
+
+      field=$(printf 'start\nend\n' | fzf --prompt='直す境界> ' --height=20% --reverse)
+      ec=$?
+      (( ec == 130 )) && return
+      [[ -z $field ]] && return
+
+      if [[ $field == start ]]; then
+        cur="''${display%%-*}"
+      else
+        cur="''${''${display#*-}%%  *}"
+      fi
+      [[ $cur == "--:--" ]] && cur=$(date +%H:%M)
+
+      val=$(fzf --print-query --query "$cur" --prompt='新しい時刻 (HH:MM)> ' --height=20% --reverse < /dev/null)
+      ec=$?
+      (( ec == 130 )) && return
+      val="''${val%%$'\n'*}"
+      [[ -z $val ]] && return
+
+      if [[ ! $val =~ '^[0-9]{1,2}:[0-9]{2}$' ]]; then
+        print -u2 -- "invalid time: $val"
+        return 1
+      fi
+      new=$(date -d "today $val" +%Y-%m-%dT%H:%M:%S) || return 1
+
+      if [[ $field == end && $is_open == 1 ]]; then
+        out=$(timew stop "$new" 2>&1)
+      else
+        out=$(timew modify "$field" "$iid" "$new" :adjust 2>&1)
+      fi
+      ec=$?
+      (( ec == 0 )) || { print -u2 -- "$out"; return $ec; }
+    }
+
     _tt_panel_do() {
       emulate -L zsh
       local verb=$1 uuid=$2 task_status start id file
@@ -216,6 +296,10 @@
           _tt_stop_active
           task "$id" start
           ;;
+        fixtime)
+          [[ -n $uuid ]] || return 1
+          _tt_fix_time "$uuid"
+          ;;
         *)
           print -u2 "unknown verb: $verb"
           return 1
@@ -227,19 +311,25 @@
       emulate -L zsh
       local panel="''${XDG_CONFIG_HOME:-$HOME/.config}/timetrack/panel.zsh"
       local reload="zsh -c 'source \"\$1\"; _tt_panel_list' tt-panel ''${(q)panel}"
+      local report="zsh -c 'source \"\$1\"; _tt_panel_report' tt-panel ''${(q)panel}"
       _tt_panel_list | fzf --ansi --multi --delimiter='\t' --with-nth=2.. \
         --prompt='timetrack> ' --height=100% --reverse \
         --preview='task {1} information' --preview-window='right:52%:wrap' \
         --header-first \
-        --header=$'Enter:開始/停止  C-a:追加のみ  C-g:追加&Start  C-d:完了  C-e:編集\nC-x:削除  C-l:ノート  C-t:done表示切替  ↑↓ / C-j C-k:移動  Esc:終了' \
-        --bind "enter:execute-silent(zsh -c 'source \"\$1\"; _tt_panel_do toggle \"\$2\"' tt-panel ''${(q)panel} {1})+reload($reload)" \
-        --bind "ctrl-a:execute(zsh -c 'source \"\$1\"; _tt_panel_do add' tt-panel ''${(q)panel})+reload($reload)" \
-        --bind "ctrl-g:execute(zsh -c 'source \"\$1\"; _tt_panel_do add-start' tt-panel ''${(q)panel})+reload($reload)" \
-        --bind "ctrl-d:execute-silent(zsh -c 'source \"\$1\"; _tt_panel_do done \"\$2\"' tt-panel ''${(q)panel} {1})+reload($reload)" \
-        --bind "ctrl-e:execute(zsh -c 'source \"\$1\"; _tt_panel_do edit \"\$2\"' tt-panel ''${(q)panel} {1})+reload($reload)" \
-        --bind "ctrl-x:execute-silent(zsh -c 'source \"\$1\"; _tt_panel_do delete \"\$2\"' tt-panel ''${(q)panel} {1})+reload($reload)" \
-        --bind "ctrl-l:execute(zsh -c 'source \"\$1\"; _tt_panel_do link \"\$2\"' tt-panel ''${(q)panel} {1})+reload($reload)" \
-        --bind "ctrl-t:execute-silent(zsh -c 'source \"\$1\"; _tt_panel_do toggle-filter' tt-panel ''${(q)panel})+reload($reload)" \
+        --footer="$(_tt_panel_report)" \
+        --footer-border=rounded \
+        --footer-label=' 集計（本日） ' \
+        --header=$'Enter:開始/停止  C-a:追加のみ  C-g:追加&Start  C-d:完了  C-e:編集\nC-x:削除  C-l:ノート  C-f:未分類修正  C-s:時刻修正  C-t:done表示切替  ↑↓ / C-j C-k:移動  Esc:終了' \
+        --bind "enter:execute-silent(zsh -c 'source \"\$1\"; _tt_panel_do toggle \"\$2\"' tt-panel ''${(q)panel} {1})+reload($reload)+transform-footer($report)" \
+        --bind "ctrl-a:execute(zsh -c 'source \"\$1\"; _tt_panel_do add' tt-panel ''${(q)panel})+reload($reload)+transform-footer($report)" \
+        --bind "ctrl-g:execute(zsh -c 'source \"\$1\"; _tt_panel_do add-start' tt-panel ''${(q)panel})+reload($reload)+transform-footer($report)" \
+        --bind "ctrl-d:execute-silent(zsh -c 'source \"\$1\"; _tt_panel_do done \"\$2\"' tt-panel ''${(q)panel} {1})+reload($reload)+transform-footer($report)" \
+        --bind "ctrl-e:execute(zsh -c 'source \"\$1\"; _tt_panel_do edit \"\$2\"' tt-panel ''${(q)panel} {1})+reload($reload)+transform-footer($report)" \
+        --bind "ctrl-x:execute-silent(zsh -c 'source \"\$1\"; _tt_panel_do delete \"\$2\"' tt-panel ''${(q)panel} {1})+reload($reload)+transform-footer($report)" \
+        --bind "ctrl-l:execute(zsh -c 'source \"\$1\"; _tt_panel_do link \"\$2\"' tt-panel ''${(q)panel} {1})+reload($reload)+transform-footer($report)" \
+        --bind "ctrl-f:execute(zsh -c 'source \"\$1\"; tfix' tt-panel ''${(q)panel})+reload($reload)+transform-footer($report)" \
+        --bind "ctrl-s:execute(zsh -c 'source \"\$1\"; _tt_panel_do fixtime \"\$2\"' tt-panel ''${(q)panel} {1})+reload($reload)+transform-footer($report)" \
+        --bind "ctrl-t:execute-silent(zsh -c 'source \"\$1\"; _tt_panel_do toggle-filter' tt-panel ''${(q)panel})+reload($reload)+transform-footer($report)" \
         >/dev/null
     }
 

@@ -4,7 +4,7 @@ set -euo pipefail
 
 usage() {
     cat <<'USAGE'
-Usage: timetrack-popup.sh <add|manage|report> [args...]
+Usage: timetrack-popup.sh <add|manage> [args...]
 USAGE
 }
 
@@ -37,10 +37,6 @@ case "$action" in
         require_command jq
         require_command fzf
         exec zsh -ic 't "$@"' timetrack-popup "$@"
-        ;;
-    report)
-        require_command twrep
-        exec twrep :day "$@"
         ;;
     *)
         usage >&2
