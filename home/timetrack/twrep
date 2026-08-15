@@ -2,18 +2,18 @@
 import argparse
 from collections import defaultdict
 from datetime import datetime, timezone
-from decimal import Decimal, ROUND_HALF_UP
 import json
 import subprocess
 import sys
+import unicodedata
 
 
 UTC = timezone.utc
-QUARTER = Decimal("0.25")
 UNCLASSIFIED = "未分類"
 NO_TAG = "（タグ無し）"
 NO_DESCRIPTION = "（説明無し）"
-INDENT = "　"
+BAR_MAX = 14
+PAL = [2, 1, 4, 3, 5, 6]
 
 
 def parse_ts(s):
@@ -25,13 +25,37 @@ def seconds_of(iv, now):
     return max(0, int((end - parse_ts(iv["start"])).total_seconds()))
 
 
-def round_q(sec):
-    hours = Decimal(sec) / Decimal(3600)
-    return (hours / QUARTER).quantize(Decimal("1"), rounding=ROUND_HALF_UP) * QUARTER
+def fmt_hm(seconds):
+    m = round(seconds / 60)
+    return f"{m // 60}:{m % 60:02d}"
 
 
-def fmt_hours(hours):
-    return f"{hours:.2f}h"
+def _w(s):
+    return sum(2 if unicodedata.east_asian_width(c) in ("W", "F") else 1 for c in s)
+
+
+def _dot(code, color):
+    return f"\033[38;5;{code}m●\033[0m" if color else "●"
+
+
+def _seg(code, n, color):
+    blocks = "█" * n
+    return f"\033[38;5;{code}m{blocks}\033[0m" if color else blocks
+
+
+def _stacked(tag_items, ptot_sec, grand_sec, color, color_of):
+    if not tag_items:
+        return ""
+    if ptot_sec <= 0 or grand_sec <= 0:
+        base = [1] + [0] * (len(tag_items) - 1)
+    else:
+        nb = max(1, round(ptot_sec / grand_sec * BAR_MAX))
+        raw = [(sec / ptot_sec * nb, tag) for tag, sec in tag_items]
+        base = [int(x) for x, _ in raw]
+        rem = nb - sum(base)
+        for i in sorted(range(len(raw)), key=lambda i: raw[i][0] - base[i], reverse=True)[:rem]:
+            base[i] += 1
+    return "".join(_seg(color_of(t), b, color) for b, (t, _) in zip(base, tag_items) if b > 0)
 
 
 def tags_of(iv):
@@ -105,13 +129,6 @@ def _project_matches(value, wanted):
     return value == wanted or value.startswith(wanted + ".")
 
 
-def _project_tuple(project):
-    if project is None:
-        return (UNCLASSIFIED,)
-    parts = tuple(part for part in project.split(".") if part)
-    return parts if parts else (UNCLASSIFIED,)
-
-
 def _filter_interval(iv, project=None, tag=None):
     iv_project, iv_tag = classify(tags_of(iv))
     if project is not None and (iv_project is None or not _project_matches(iv_project, project)):
@@ -122,8 +139,14 @@ def _filter_interval(iv, project=None, tag=None):
 
 
 def _aggregate(intervals, now, project=None, tag=None):
-    leaf_sec = defaultdict(int)
-    leaf_start = {}
+    project_sec = defaultdict(int)
+    project_start = {}
+    tag_sec = defaultdict(int)
+    tag_start = {}
+    detail_sec = defaultdict(int)
+    detail_start = {}
+    project_tags = defaultdict(set)
+    tag_descriptions = defaultdict(set)
     unclassified_count = 0
 
     for iv in intervals:
@@ -134,66 +157,132 @@ def _aggregate(intervals, now, project=None, tag=None):
         iv_project, iv_tag = classify(tags_of(iv))
         if iv_project is None:
             unclassified_count += 1
-        path = list(_project_tuple(iv_project))
-        if iv_tag:
-            path.append(iv_tag)
-        path.append(description_of(tags_of(iv)))
-        leaf = tuple(path)
-        leaf_sec[leaf] += seconds
-        _min_start(leaf_start, leaf, start)
+        p = iv_project or UNCLASSIFIED
+        t = iv_tag or NO_TAG
+        d = description_of(tags_of(iv))
+        detail = (p, t, d)
 
-    leaf_h = {key: round_q(seconds) for key, seconds in leaf_sec.items()}
-    node_h = defaultdict(lambda: Decimal(0))
-    node_start = {}
-    children = defaultdict(set)
-    roots = set()
-    total = Decimal(0)
-
-    for leaf, hours in leaf_h.items():
-        total += hours
-        start = leaf_start[leaf]
-        for depth in range(1, len(leaf) + 1):
-            node = leaf[:depth]
-            node_h[node] += hours
-            _min_start(node_start, node, start)
-            if depth == 1:
-                roots.add(node)
-            else:
-                children[leaf[: depth - 1]].add(node)
+        project_sec[p] += seconds
+        _min_start(project_start, p, start)
+        tag_sec[(p, t)] += seconds
+        _min_start(tag_start, (p, t), start)
+        detail_sec[detail] += seconds
+        _min_start(detail_start, detail, start)
+        project_tags[p].add(t)
+        tag_descriptions[(p, t)].add(d)
 
     return {
-        "node_h": node_h,
-        "node_start": node_start,
-        "children": children,
-        "roots": roots,
-        "total": total,
+        "project_sec": project_sec,
+        "project_start": project_start,
+        "tag_sec": tag_sec,
+        "tag_start": tag_start,
+        "detail_sec": detail_sec,
+        "detail_start": detail_start,
+        "project_tags": project_tags,
+        "tag_descriptions": tag_descriptions,
+        "total": sum(project_sec.values()),
         "unclassified_count": unclassified_count,
     }
 
 
-def _sort_nodes(nodes, node_start):
-    return sorted(nodes, key=lambda node: (node_start[node], node[-1]))
+def _sort_names(names, starts):
+    return sorted(names, key=lambda name: (starts[name], name))
 
 
-def _render_node(lines, node, data, depth):
-    name = node[-1]
-    lines.append(f"{INDENT * depth}・{name}（{fmt_hours(data['node_h'][node])}）")
-
-    for child in _sort_nodes(data["children"].get(node, set()), data["node_start"]):
-        _render_node(lines, child, data, depth + 1)
+def _sorted_projects(data):
+    return _sort_names(data["project_sec"].keys(), data["project_start"])
 
 
-def build_report(intervals, now, project=None, tag=None):
+def _sorted_tags(data, project):
+    tags = data["project_tags"].get(project, set())
+    return sorted(tags, key=lambda t: (data["tag_start"][(project, t)], t))
+
+
+def _sorted_descriptions(data, project, tag):
+    descriptions = data["tag_descriptions"].get((project, tag), set())
+    return sorted(descriptions, key=lambda d: (data["detail_start"][(project, tag, d)], d))
+
+
+def _detail_label(tag, description):
+    return f"{tag}  {description}"
+
+
+def _layout_widths(data):
+    label_width = 0
+    time_width = 0
+    for project in _sorted_projects(data):
+        label_width = max(label_width, _w(project))
+        time_width = max(time_width, _w(fmt_hm(data["project_sec"][project])))
+        for t in _sorted_tags(data, project):
+            for description in _sorted_descriptions(data, project, t):
+                label_width = max(label_width, _w("● " + _detail_label(t, description)))
+                time_width = max(time_width, _w(fmt_hm(data["detail_sec"][(project, t, description)])))
+    return label_width, time_width
+
+
+def _make_color_of(data):
+    colors = {}
+    next_index = 0
+
+    def color_of(tag):
+        nonlocal next_index
+        if tag == NO_TAG:
+            return 8
+        if tag not in colors:
+            colors[tag] = PAL[next_index % len(PAL)]
+            next_index += 1
+        return colors[tag]
+
+    for project in _sorted_projects(data):
+        for t in _sorted_tags(data, project):
+            color_of(t)
+    return color_of
+
+
+def _line(label_plain, label_text, seconds, label_width, time_width):
+    time_text = fmt_hm(seconds)
+    label_pad = " " * (label_width - _w(label_plain) + 2)
+    time_pad = " " * (time_width - _w(time_text))
+    return f"{label_text}{label_pad}{time_pad}{time_text}"
+
+
+def build_report(intervals, now, project=None, tag=None, color=False):
     data = _aggregate(intervals, now, project=project, tag=tag)
+    label_width, time_width = _layout_widths(data)
+    color_of = _make_color_of(data)
     lines = []
-    for root in _sort_nodes(data["roots"], data["node_start"]):
+    for project in _sorted_projects(data):
         if lines:
             lines.append("")
-        _render_node(lines, root, data, 0)
+        tags = _sorted_tags(data, project)
+        tag_items = [(t, data["tag_sec"][(project, t)]) for t in tags]
+        project_line = _line(
+            project,
+            project,
+            data["project_sec"][project],
+            label_width,
+            time_width,
+        )
+        bar = _stacked(tag_items, data["project_sec"][project], data["total"], color, color_of)
+        lines.append(f"{project_line}  {bar}" if bar else project_line)
+
+        for t in tags:
+            for description in _sorted_descriptions(data, project, t):
+                plain_label = "● " + _detail_label(t, description)
+                text_label = f"{_dot(color_of(t), color)} {_detail_label(t, description)}"
+                lines.append(
+                    _line(
+                        plain_label,
+                        text_label,
+                        data["detail_sec"][(project, t, description)],
+                        label_width,
+                        time_width,
+                    )
+                )
 
     if lines:
         lines.append("")
-    lines.append(f"合計 {fmt_hours(data['total'])}")
+    lines.append(f"合計 {fmt_hm(data['total'])}")
     if data["unclassified_count"] > 0:
         lines.append(f"未分類が {data['unclassified_count']} 件あります。tfix で修正できます。")
     return "\n".join(lines)
@@ -234,6 +323,7 @@ def main(argv=None):
     parser.add_argument("range", nargs="?", default=":day")
     parser.add_argument("--project")
     parser.add_argument("--tag")
+    parser.add_argument("--color", action="store_true", default=False)
     parser.add_argument("--list-unclassified", action="store_true")
     args = parser.parse_args(argv)
 
@@ -249,6 +339,7 @@ def main(argv=None):
                 datetime.now(UTC),
                 project=args.project,
                 tag=args.tag,
+                color=args.color,
             )
     except subprocess.CalledProcessError as exc:
         sys.stderr.write(exc.stderr)
