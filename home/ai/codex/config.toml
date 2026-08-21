@@ -1,0 +1,28 @@
+model = "gpt-5.5"
+model_reasoning_effort = "high"
+plan_mode_reasoning_effort = "high"
+
+[tui]
+status_line = ["model-with-reasoning", "current-dir"]
+status_line_use_colors = true
+
+[tui.model_availability_nux]
+"gpt-5.5" = 4
+
+[agents]
+max_concurrent_threads_per_session = 8
+
+[projects."/home/jpeguu/dotfiles"]
+trust_level = "trusted"
+
+[projects."/home/jpeguu"]
+trust_level = "trusted"
+
+[projects."/home/jpeguu/training-materials"]
+trust_level = "trusted"
+
+[projects."/home/jpeguu/agent-book"]
+trust_level = "trusted"
+
+[projects."/home/jpeguu/task-agent"]
+trust_level = "trusted"

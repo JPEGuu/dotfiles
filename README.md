@@ -23,11 +23,12 @@ dotfiles/
     ├── shell.nix                       # zsh / 環境変数 / エイリアス / SKK辞書
     ├── programs.nix                    # starship / zoxide / fzf / git の enable
     ├── ai/
-    │   ├── default.nix                 # claude-code / codex + AI assistant 設定
-    │   └── claude/                     # Claude Code / Codex 共通コンテキスト
-    │       ├── CLAUDE.md
-    │       ├── commands/
-    │       └── agents/
+    │   ├── default.nix                 # codex + AI assistant 設定
+    │   └── codex/                      # Codex 設定 / custom agents / skills
+    │       ├── AGENTS.md
+    │       ├── config.toml
+    │       ├── agents/
+    │       └── skills/
     ├── nvim/                           # Neovim 設定（raw config co-location）
     ├── tmux/                           # tmux 設定
     ├── yazi/                           # yazi 設定
