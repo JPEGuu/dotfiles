@@ -78,7 +78,7 @@
       ${lib.optionalString (!(osConfig.my.gui.enable or false)) ''
         # --- tmux auto-start (WSL / CLI-only 環境のみ。GUI では起動しない) ---
         # 対話シェル & tmux 未起動のときだけ、既存セッションへアタッチ（無ければ新規）。
-        # 非対話（Claude Code の Bash / nixos-rebuild / ssh cmd 等）や tmux ネストでは起動しない。
+        # 非対話（Codex の Bash / nixos-rebuild / ssh cmd 等）や tmux ネストでは起動しない。
         # VS Code 統合ターミナルで無効化したい場合は [[ "$TERM_PROGRAM" != vscode ]] を条件に追加。
         if [[ $- == *i* ]] && [[ -z "$TMUX" ]] && command -v tmux >/dev/null; then
             tmux attach 2>/dev/null || tmux new-session

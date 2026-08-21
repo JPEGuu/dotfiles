@@ -15,7 +15,7 @@
     ];
   };
 
-  # unfree パッケージを許可（claude-code 等が unfree のため必須）。
+  # unfree パッケージを許可。
   # 全許可ではなく特定のみ許可したい場合は allowUnfreePredicate を使う。
   nixpkgs.config.allowUnfree = true;
 
